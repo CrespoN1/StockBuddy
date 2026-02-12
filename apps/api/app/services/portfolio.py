@@ -6,6 +6,7 @@ Changes: in-memory state → DB-backed via SQLModel, all queries scoped by user_
          duplicate get_earnings_insights resolved (kept first version with sentiment_summary).
 """
 
+import asyncio
 import structlog
 from datetime import datetime, timezone
 
@@ -95,6 +96,8 @@ async def add_holding(
     except Exception as exc:
         logger.warning("Price fetch failed for %s: %s", ticker, exc)
 
+    await asyncio.sleep(1.5)  # respect Alpha Vantage rate limit
+
     try:
         fundamentals = await market_data.get_stock_fundamentals(ticker)
         sector = fundamentals.get("sector") or "Unknown"
@@ -122,30 +125,27 @@ async def add_holding(
 async def refresh_holdings(
     db: AsyncSession, user_id: str, portfolio_id: int
 ) -> list[Holding] | None:
-    """Refresh market data for all holdings in a portfolio."""
+    """Refresh prices for all holdings in a portfolio.
+
+    Adds a 1.5s delay between API calls to respect Alpha Vantage free-tier
+    rate limits (5 requests/minute, 25/day).
+    """
     portfolio = await get_portfolio(db, user_id, portfolio_id)
     if portfolio is None:
         return None
 
     holdings = await get_holdings(db, user_id, portfolio_id)
-    for h in holdings:
+    for i, h in enumerate(holdings):
+        if i > 0:
+            await asyncio.sleep(1.5)
         try:
             price = await market_data.get_latest_price(h.ticker)
             if price is not None:
                 h.last_price = price
+                h.updated_at = datetime.now(timezone.utc)
+                db.add(h)
         except Exception as exc:
             logger.warning("Price refresh failed for %s: %s", h.ticker, exc)
-
-        try:
-            fundamentals = await market_data.get_stock_fundamentals(h.ticker)
-            h.sector = fundamentals.get("sector") or h.sector
-            h.beta = fundamentals.get("beta") or h.beta
-            h.dividend_yield = fundamentals.get("dividend_yield")
-        except Exception as exc:
-            logger.warning("Fundamentals refresh failed for %s: %s", h.ticker, exc)
-
-        h.updated_at = datetime.now(timezone.utc)
-        db.add(h)
 
     await db.flush()
     for h in holdings:
