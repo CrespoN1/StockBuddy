@@ -14,6 +14,7 @@ from app.database import async_session_factory
 from app.models import AnalysisJob, EarningsCall
 from app.services import ai_analysis, market_data, transcript, sentiment_parser, news
 from app.services import portfolio as portfolio_svc
+from app.services import subscription as sub_svc
 
 logger = structlog.stdlib.get_logger(__name__)
 
@@ -92,6 +93,7 @@ async def run_earnings_analysis(
             job.status = "completed"
             job.result = {"analysis": analysis_text}
             job.completed_at = datetime.now(timezone.utc)
+            await sub_svc.increment_usage(db, user_id, "earnings_analysis")
             db.add(job)
             await db.commit()
 
@@ -286,6 +288,7 @@ async def run_portfolio_analysis(
                 },
             }
             job.completed_at = datetime.now(timezone.utc)
+            await sub_svc.increment_usage(db, user_id, "portfolio_analysis")
             db.add(job)
             await db.commit()
 

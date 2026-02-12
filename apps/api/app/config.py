@@ -39,6 +39,12 @@ class Settings(BaseSettings):
     fmp_api_key: str = ""
     massive_api_key: str = ""
 
+    # Stripe
+    stripe_secret_key: str = ""
+    stripe_publishable_key: str = ""
+    stripe_webhook_secret: str = ""
+    stripe_pro_price_id: str = ""
+
     # API URLs
     deepseek_url: str = "https://api.deepseek.com/v1/chat/completions"
     alpha_vantage_base_url: str = "https://www.alphavantage.co/query"
@@ -84,6 +90,7 @@ class Settings(BaseSettings):
             "clerk_jwks_url": self.clerk_jwks_url,
             "clerk_secret_key": self.clerk_secret_key,
             "deepseek_api_key": self.deepseek_api_key,
+            "stripe_secret_key": self.stripe_secret_key,
         }
         missing_recommended = [name for name, value in recommended.items() if not value]
         if missing_recommended:

@@ -11,6 +11,7 @@ from app.database import get_db
 from app.models import AnalysisJob
 from app.schemas.analysis import CompareRequest, JobStatus
 from app.services import portfolio as portfolio_svc
+from app.services import subscription as sub_svc
 from app.workers.tasks import run_portfolio_analysis, run_comparison
 
 logger = structlog.stdlib.get_logger(__name__)
@@ -43,6 +44,12 @@ async def analyze_portfolio(
     portfolio = await portfolio_svc.get_portfolio(db, user_id, portfolio_id)
     if portfolio is None:
         raise HTTPException(404, "Portfolio not found")
+
+    if not await sub_svc.check_can_analyze_portfolio(db, user_id):
+        raise HTTPException(
+            403,
+            "Free plan allows 1 portfolio analysis per month. Upgrade to Pro for unlimited.",
+        )
 
     job = AnalysisJob(
         user_id=user_id,
@@ -77,6 +84,11 @@ async def compare_earnings(
     Returns immediately with a pending job. Poll GET /analysis/jobs/{job_id}
     for status updates.
     """
+    if not await sub_svc.check_can_compare(db, user_id):
+        raise HTTPException(
+            403, "Stock comparison requires Pro plan. Upgrade to unlock."
+        )
+
     job = AnalysisJob(
         user_id=user_id,
         job_type="comparison",

@@ -21,6 +21,12 @@ from .stock import (
     OHLCVBar,
     TechnicalIndicators,
 )
+from .subscription import (
+    SubscriptionRead,
+    UsageInfo,
+    CheckoutSessionResponse,
+    BillingPortalResponse,
+)
 
 __all__ = [
     "PortfolioCreate",
@@ -43,4 +49,8 @@ __all__ = [
     "StockInfo",
     "OHLCVBar",
     "TechnicalIndicators",
+    "SubscriptionRead",
+    "UsageInfo",
+    "CheckoutSessionResponse",
+    "BillingPortalResponse",
 ]

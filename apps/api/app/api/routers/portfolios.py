@@ -16,6 +16,7 @@ from app.schemas.analysis import (
 )
 from app.schemas.stock import NewsArticle
 from app.services import news, portfolio as portfolio_svc
+from app.services import subscription as sub_svc
 
 router = APIRouter(prefix="/portfolios", tags=["portfolios"])
 
@@ -34,6 +35,10 @@ async def create_portfolio(
     db: AsyncSession = Depends(get_db),
     user_id: str = Depends(get_current_user),
 ):
+    if not await sub_svc.check_can_create_portfolio(db, user_id):
+        raise HTTPException(
+            403, "Free plan allows only 1 portfolio. Upgrade to Pro for unlimited."
+        )
     return await portfolio_svc.create_portfolio(db, user_id, body.name)
 
 

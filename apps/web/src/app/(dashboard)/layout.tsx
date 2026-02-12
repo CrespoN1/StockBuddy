@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Menu } from "lucide-react";
+import { Menu, Sparkles } from "lucide-react";
 import { UserButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
+import { useSubscription, useCreateCheckout } from "@/hooks/use-subscription";
 import {
   Sheet,
   SheetContent,
@@ -20,6 +21,8 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { data: subscription } = useSubscription();
+  const checkout = useCreateCheckout();
 
   return (
     <div className="flex h-screen bg-background">
@@ -51,7 +54,21 @@ export default function DashboardLayout({
             </Sheet>
             <h1 className="text-lg font-semibold">StockBuddy</h1>
           </div>
-          <UserButton />
+          <div className="flex items-center">
+            {subscription?.plan !== "pro" && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="mr-2 hidden sm:flex"
+                onClick={() => checkout.mutate()}
+                disabled={checkout.isPending}
+              >
+                <Sparkles className="mr-1 h-3 w-3" />
+                Upgrade
+              </Button>
+            )}
+            <UserButton />
+          </div>
         </header>
         <main className="flex-1 overflow-y-auto p-4 md:p-6">{children}</main>
       </div>

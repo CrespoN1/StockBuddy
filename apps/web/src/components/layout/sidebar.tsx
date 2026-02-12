@@ -8,6 +8,7 @@ import {
   Search,
   BarChart3,
   GitCompareArrows,
+  CreditCard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +18,7 @@ export const navItems = [
   { href: "/stocks", label: "Stocks", icon: Search },
   { href: "/earnings", label: "Earnings", icon: BarChart3 },
   { href: "/compare", label: "Compare", icon: GitCompareArrows },
+  { href: "/billing", label: "Billing", icon: CreditCard },
 ];
 
 interface SidebarNavProps {

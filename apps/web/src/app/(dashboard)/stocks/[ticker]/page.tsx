@@ -24,6 +24,8 @@ import { NewsPanel } from "@/components/stock/news-panel";
 import { ForecastPanel } from "@/components/stock/forecast-panel";
 import { useStockInfo, useStockQuote, useStockHistory } from "@/hooks/use-stocks";
 import { useEarnings } from "@/hooks/use-earnings";
+import { useUsage } from "@/hooks/use-subscription";
+import { UpgradePrompt } from "@/components/ui/upgrade-prompt";
 import { formatCurrency, formatDate } from "@/lib/format";
 
 const PERIODS = [
@@ -43,6 +45,7 @@ export default function StockDetailPage() {
   const { data: quote } = useStockQuote(ticker);
   const { data: history, isPending: historyLoading } = useStockHistory(ticker, period);
   const { data: earnings } = useEarnings(ticker);
+  const { data: usage } = useUsage();
 
   if (infoError) {
     return (
@@ -139,7 +142,14 @@ export default function StockDetailPage() {
         </TabsContent>
 
         <TabsContent value="forecast">
-          <ForecastPanel ticker={ticker} />
+          {usage && !usage.can_forecast ? (
+            <UpgradePrompt
+              feature="Price Forecasting"
+              description="Get AI-powered price forecasts with confidence bounds. Upgrade to Pro to unlock."
+            />
+          ) : (
+            <ForecastPanel ticker={ticker} />
+          )}
         </TabsContent>
 
         <TabsContent value="earnings" className="space-y-4">

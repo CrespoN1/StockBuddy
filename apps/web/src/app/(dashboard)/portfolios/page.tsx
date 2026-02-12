@@ -12,10 +12,12 @@ import { CreatePortfolioDialog } from "@/components/portfolio/create-portfolio-d
 import { EditPortfolioDialog } from "@/components/portfolio/edit-portfolio-dialog";
 import { DeletePortfolioDialog } from "@/components/portfolio/delete-portfolio-dialog";
 import { usePortfolios } from "@/hooks/use-portfolios";
+import { useUsage } from "@/hooks/use-subscription";
 import type { PortfolioRead } from "@/types";
 
 export default function PortfoliosPage() {
   const { data: portfolios, isPending, isError, error, refetch } = usePortfolios();
+  const { data: usage } = useUsage();
   const [createOpen, setCreateOpen] = useState(false);
   const [editPortfolio, setEditPortfolio] = useState<PortfolioRead | null>(null);
   const [deletePortfolio, setDeletePortfolio] = useState<PortfolioRead | null>(null);
@@ -55,10 +57,21 @@ export default function PortfoliosPage() {
     <div>
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold tracking-tight">Portfolios</h2>
-        <Button onClick={() => setCreateOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          New Portfolio
-        </Button>
+        <div className="flex flex-col items-end gap-1">
+          <Button
+            onClick={() => setCreateOpen(true)}
+            disabled={usage !== undefined && !usage.can_create_portfolio}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            New Portfolio
+          </Button>
+          {usage && !usage.can_create_portfolio && (
+            <p className="text-xs text-muted-foreground">
+              Free plan allows 1 portfolio.{" "}
+              <a href="/billing" className="text-primary underline">Upgrade to Pro</a>
+            </p>
+          )}
+        </div>
       </div>
 
       {portfolios && portfolios.length > 0 ? (

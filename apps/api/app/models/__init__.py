@@ -3,6 +3,7 @@ from .holding import Holding
 from .earnings import EarningsCall
 from .snapshot import PortfolioSnapshot
 from .analysis_job import AnalysisJob
+from .subscription import Subscription
 
 __all__ = [
     "Portfolio",
@@ -10,4 +11,5 @@ __all__ = [
     "EarningsCall",
     "PortfolioSnapshot",
     "AnalysisJob",
+    "Subscription",
 ]

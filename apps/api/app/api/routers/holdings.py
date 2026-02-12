@@ -10,6 +10,7 @@ from app.core.rate_limiter import AI_LIMIT, limiter
 from app.database import get_db
 from app.schemas.holding import HoldingCreate, HoldingRead, HoldingUpdate
 from app.services import portfolio as portfolio_svc
+from app.services import subscription as sub_svc
 
 router = APIRouter(prefix="/portfolios/{portfolio_id}/holdings", tags=["holdings"])
 
@@ -30,6 +31,12 @@ async def add_holding(
     db: AsyncSession = Depends(get_db),
     user_id: str = Depends(get_current_user),
 ):
+    holdings = await portfolio_svc.get_holdings(db, user_id, portfolio_id)
+    if not await sub_svc.check_can_add_holding(db, user_id, len(holdings)):
+        raise HTTPException(
+            403,
+            "Free plan allows 10 holdings per portfolio. Upgrade to Pro for unlimited.",
+        )
     holding = await portfolio_svc.add_holding(
         db, user_id, portfolio_id, body.ticker, body.shares
     )

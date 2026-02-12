@@ -4,8 +4,10 @@ import { Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { UsageBadge } from "@/components/ui/usage-badge";
 import { useAnalyzePortfolio } from "@/hooks/use-analysis";
 import { useJobPolling } from "@/hooks/use-job-polling";
+import { useUsage } from "@/hooks/use-subscription";
 
 interface PortfolioAnalysisPanelProps {
   portfolioId: number;
@@ -14,6 +16,7 @@ interface PortfolioAnalysisPanelProps {
 export function PortfolioAnalysisPanel({ portfolioId }: PortfolioAnalysisPanelProps) {
   const { job, isPolling, startPolling } = useJobPolling();
   const analyzePortfolio = useAnalyzePortfolio();
+  const { data: usage } = useUsage();
 
   function handleAnalyze() {
     analyzePortfolio.mutate(portfolioId, {
@@ -37,22 +40,31 @@ export function PortfolioAnalysisPanel({ portfolioId }: PortfolioAnalysisPanelPr
 
   return (
     <div className="space-y-4">
-      <Button
-        onClick={handleAnalyze}
-        disabled={isRunning}
-      >
-        {isRunning ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            {isPolling ? "Processing..." : "Submitting..."}
-          </>
-        ) : (
-          <>
-            <Sparkles className="mr-2 h-4 w-4" />
-            Analyze Portfolio
-          </>
+      <div className="flex items-center gap-3">
+        <Button
+          onClick={handleAnalyze}
+          disabled={isRunning || (usage !== undefined && !usage.can_analyze_portfolio)}
+        >
+          {isRunning ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              {isPolling ? "Processing..." : "Submitting..."}
+            </>
+          ) : (
+            <>
+              <Sparkles className="mr-2 h-4 w-4" />
+              Analyze Portfolio
+            </>
+          )}
+        </Button>
+        {usage && (
+          <UsageBadge
+            used={usage.portfolio_analysis_used}
+            limit={usage.portfolio_analysis_limit}
+            label="Analyses"
+          />
         )}
-      </Button>
+      </div>
 
       {job?.status === "failed" && (
         <Card className="border-destructive/50">

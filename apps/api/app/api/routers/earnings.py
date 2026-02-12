@@ -12,6 +12,7 @@ from app.database import get_db
 from app.models import AnalysisJob, EarningsCall
 from app.schemas.analysis import JobStatus
 from app.schemas.earnings import EarningsAnalyzeRequest, EarningsCallRead
+from app.services import subscription as sub_svc
 from app.workers.tasks import run_earnings_analysis
 
 logger = structlog.stdlib.get_logger(__name__)
@@ -59,6 +60,11 @@ async def analyze_earnings(
     Returns immediately with a pending job. Poll GET /analysis/jobs/{job_id}
     for status updates.
     """
+    if not await sub_svc.check_can_analyze_earnings(db, user_id):
+        raise HTTPException(
+            403,
+            "Free plan allows 3 earnings analyses per month. Upgrade to Pro for unlimited.",
+        )
     job = AnalysisJob(
         user_id=user_id,
         job_type="earnings_analysis",

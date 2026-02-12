@@ -5,9 +5,11 @@ import { Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { UsageBadge } from "@/components/ui/usage-badge";
 import { StockSearchBar } from "@/components/stock/stock-search-bar";
 import { useAnalyzeEarnings } from "@/hooks/use-earnings";
 import { useJobPolling } from "@/hooks/use-job-polling";
+import { useUsage } from "@/hooks/use-subscription";
 
 interface AnalyzeEarningsFormProps {
   onTickerSelect?: (ticker: string) => void;
@@ -18,6 +20,7 @@ export function AnalyzeEarningsForm({ onTickerSelect }: AnalyzeEarningsFormProps
   const [transcript, setTranscript] = useState("");
   const { job, isPolling, startPolling, reset } = useJobPolling();
   const analyzeEarnings = useAnalyzeEarnings();
+  const { data: usage } = useUsage();
 
   function handleAnalyze() {
     if (!ticker) return;
@@ -79,22 +82,31 @@ export function AnalyzeEarningsForm({ onTickerSelect }: AnalyzeEarningsFormProps
               automatically fetch the latest transcript via FMP.
             </p>
           </div>
-          <Button
-            onClick={handleAnalyze}
-            disabled={!ticker || isRunning}
-          >
-            {isRunning ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {isPolling ? "Processing..." : "Submitting..."}
-              </>
-            ) : (
-              <>
-                <Sparkles className="mr-2 h-4 w-4" />
-                Analyze
-              </>
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={handleAnalyze}
+              disabled={!ticker || isRunning || (usage !== undefined && !usage.can_analyze_earnings)}
+            >
+              {isRunning ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {isPolling ? "Processing..." : "Submitting..."}
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Analyze
+                </>
+              )}
+            </Button>
+            {usage && (
+              <UsageBadge
+                used={usage.earnings_analysis_used}
+                limit={usage.earnings_analysis_limit}
+                label="Analyses"
+              />
             )}
-          </Button>
+          </div>
         </CardContent>
       </Card>
 

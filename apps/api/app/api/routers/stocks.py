@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
 from app.core.rate_limiter import SEARCH_LIMIT, limiter
+from app.database import get_db
 from app.schemas.stock import (
     NewsArticle,
     OHLCVBar,
@@ -13,6 +15,7 @@ from app.schemas.stock import (
     TechnicalIndicators,
 )
 from app.services import forecast, market_data, news, search, stock_data, technical_analysis
+from app.services import subscription as sub_svc
 
 router = APIRouter(prefix="/stocks", tags=["stocks"])
 
@@ -81,19 +84,32 @@ async def get_technicals(
 async def get_stock_news(
     ticker: str,
     limit: int = Query(10, ge=1, le=50),
-    _user_id: str = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    user_id: str = Depends(get_current_user),
 ):
     """Get recent news articles with sentiment for a stock."""
-    return await news.get_stock_news(ticker, limit=limit)
+    articles = await news.get_stock_news(ticker, limit=limit)
+    sub = await sub_svc.get_or_create_subscription(db, user_id)
+    if sub.plan != "pro":
+        for article in articles:
+            article["ticker_sentiment_score"] = None
+            article["ticker_sentiment_label"] = "Pro only"
+            article["overall_sentiment_score"] = None
+    return articles
 
 
 @router.get("/{ticker}/forecast", response_model=StockForecast)
 async def get_stock_forecast(
     ticker: str,
     days: int = Query(30, ge=7, le=90),
-    _user_id: str = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    user_id: str = Depends(get_current_user),
 ):
     """Get price forecast for a stock using predictive model."""
+    if not await sub_svc.check_can_forecast(db, user_id):
+        raise HTTPException(
+            403, "Price forecasting requires Pro plan. Upgrade to unlock."
+        )
     result = await forecast.get_forecast(ticker, forecast_days=days)
     if "error" in result:
         raise HTTPException(400, result["error"])
