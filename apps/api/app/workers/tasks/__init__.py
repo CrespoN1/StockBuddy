@@ -12,7 +12,7 @@ from sqlalchemy import select
 
 from app.database import async_session_factory
 from app.models import AnalysisJob, EarningsCall
-from app.services import ai_analysis, market_data, transcript, sentiment_parser
+from app.services import ai_analysis, market_data, transcript, sentiment_parser, news
 from app.services import portfolio as portfolio_svc
 
 logger = structlog.stdlib.get_logger(__name__)
@@ -117,17 +117,23 @@ async def run_earnings_analysis(
 async def _ensure_earnings_data(
     db, user_id: str, ticker: str
 ) -> EarningsCall | None:
-    """Check DB for existing earnings data; if missing, fetch transcript and analyze.
+    """Check DB for existing earnings data; if missing, gather data and analyze.
 
-    Returns the EarningsCall record (existing or newly created), or None if
-    no transcript is available.
+    Data sources (tried in order):
+    1. Existing EarningsCall in DB
+    2. FMP earnings transcript (if FMP_API_KEY configured)
+    3. Alpha Vantage fundamentals + news sentiment (fallback — always available)
+
+    Returns the EarningsCall record (existing or newly created), or None on failure.
     """
+    ticker = ticker.upper()
+
     # 1. Check for existing earnings analysis
     ec_result = await db.execute(
         select(EarningsCall)
         .where(
             EarningsCall.user_id == user_id,
-            EarningsCall.ticker == ticker.upper(),
+            EarningsCall.ticker == ticker,
         )
         .order_by(EarningsCall.created_at.desc())
         .limit(1)
@@ -137,36 +143,73 @@ async def _ensure_earnings_data(
         logger.info("Found existing earnings data for %s", ticker)
         return ec
 
-    # 2. No existing data — fetch transcript from FMP
-    logger.info("No earnings data for %s, fetching transcript from FMP", ticker)
+    # 2. Try FMP transcript first (best data source)
+    transcript_text = None
     try:
         transcript_text = await transcript.fetch_transcript(ticker)
     except Exception as exc:
         logger.warning("Failed to fetch transcript for %s: %s", ticker, exc)
-        transcript_text = None
 
-    if not transcript_text:
-        logger.info("No transcript available for %s", ticker)
-        return None
-
-    # 3. Get fundamentals for context
+    # 3. Get fundamentals (always available via Alpha Vantage)
     fundamentals = await market_data.get_stock_fundamentals(ticker)
 
-    # 4. Run AI analysis on the transcript
-    analysis_text = await ai_analysis.explain_earnings_call(
-        ticker=ticker,
-        call_text=transcript_text,
-        fundamentals=fundamentals,
-    )
+    if transcript_text:
+        # Have real transcript — run full earnings analysis
+        logger.info("Analyzing FMP transcript for %s", ticker)
+        analysis_text = await ai_analysis.explain_earnings_call(
+            ticker=ticker,
+            call_text=transcript_text,
+            fundamentals=fundamentals,
+        )
+    else:
+        # No transcript — build analysis from fundamentals + news sentiment
+        logger.info("No transcript for %s, building analysis from fundamentals + news", ticker)
 
-    # 5. Parse structured data
+        # Fetch recent news with sentiment scores
+        news_articles = await news.get_stock_news(ticker, limit=10)
+
+        # Build a data summary for the AI
+        news_summary = ""
+        if news_articles:
+            for i, article in enumerate(news_articles[:8], 1):
+                news_summary += (
+                    f"  {i}. [{article.get('ticker_sentiment_label', 'Neutral')} "
+                    f"(score: {article.get('ticker_sentiment_score', 0):.2f})] "
+                    f"{article.get('title', 'N/A')}\n"
+                    f"     Summary: {article.get('summary', '')[:150]}\n"
+                )
+        else:
+            news_summary = "  No recent news available.\n"
+
+        # Get current price
+        price = await market_data.get_latest_price(ticker)
+
+        analysis_context = f"""
+Stock: {ticker}
+Current Price: ${price:.2f if price else 'N/A'}
+Sector: {fundamentals.get('sector', 'N/A')}
+Market Cap: {fundamentals.get('market_cap', 'N/A')}
+P/E Ratio: {fundamentals.get('pe_ratio', 'N/A')}
+Beta: {fundamentals.get('beta', 'N/A')}
+Dividend Yield: {fundamentals.get('dividend_yield', 'N/A')}
+
+Recent News & Sentiment:
+{news_summary}
+"""
+
+        analysis_text = await ai_analysis.analyze_stock_overview(
+            ticker=ticker,
+            context=analysis_context,
+        )
+
+    # 4. Parse structured data
     parsed = sentiment_parser.parse_analysis(analysis_text)
 
-    # 6. Store in DB for future use
+    # 5. Store in DB for future use
     ec = EarningsCall(
         user_id=user_id,
-        ticker=ticker.upper(),
-        extracted_text=transcript_text[:5000],
+        ticker=ticker,
+        extracted_text=(transcript_text or "Generated from fundamentals + news")[:5000],
         summary=analysis_text,
         sentiment_score=parsed["sentiment_score"],
         guidance_outlook=parsed["guidance_outlook"],

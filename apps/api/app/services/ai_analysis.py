@@ -154,6 +154,37 @@ async def analyze_portfolio_with_earnings(
     return await _call_ai_api(prompt)
 
 
+async def analyze_stock_overview(
+    ticker: str,
+    context: str,
+) -> str:
+    """Generate stock analysis from fundamentals and news data.
+
+    Used as a fallback when no earnings transcript is available.
+    Produces output in the same structured format as explain_earnings_call
+    so the sentiment parser can extract data consistently.
+    """
+    prompt = f"""
+    You are an investment analyst. Analyze {ticker} using the data below.
+
+    {context}
+
+    Provide a comprehensive analysis covering:
+
+    1. EXECUTIVE SUMMARY (3-4 bullet points on current state)
+    2. FINANCIAL PERFORMANCE (Key metrics: P/E, market cap, dividend)
+    3. BUSINESS HIGHLIGHTS (Sector position, recent developments from news)
+    4. MANAGEMENT GUIDANCE (Outlook based on news sentiment trends)
+    5. RISK FACTORS (Risks identified from news and fundamentals)
+    6. INVESTMENT IMPLICATIONS (What this means for investors)
+    7. SENTIMENT ANALYSIS (Overall tone based on news: Positive/Neutral/Negative)
+
+    Focus on actionable insights based on the actual data provided.
+    Format your response with clear sections and bullet points.
+    """
+    return await _call_ai_api(prompt)
+
+
 async def compare_multiple_earnings(
     tickers: list[str],
     analyses: list[dict],
