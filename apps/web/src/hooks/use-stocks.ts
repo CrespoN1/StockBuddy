@@ -10,6 +10,8 @@ import type {
   StockFundamentals,
   OHLCVBar,
   TechnicalIndicators,
+  NewsArticle,
+  StockForecast,
 } from "@/types";
 
 function useApiFetch() {
@@ -78,5 +80,31 @@ export function useStockTechnicals(ticker: string) {
       fetchApi<TechnicalIndicators>(`/api/v1/stocks/${ticker}/technicals`),
     enabled: ticker.length > 0,
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useStockNews(ticker: string, limit = 10) {
+  const fetchApi = useApiFetch();
+  return useQuery({
+    queryKey: ["stocks", ticker, "news", limit],
+    queryFn: () =>
+      fetchApi<NewsArticle[]>(
+        `/api/v1/stocks/${ticker}/news?limit=${limit}`
+      ),
+    enabled: ticker.length > 0,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useStockForecast(ticker: string, days = 30) {
+  const fetchApi = useApiFetch();
+  return useQuery({
+    queryKey: ["stocks", ticker, "forecast", days],
+    queryFn: () =>
+      fetchApi<StockForecast>(
+        `/api/v1/stocks/${ticker}/forecast?days=${days}`
+      ),
+    enabled: ticker.length > 0,
+    staleTime: 10 * 60 * 1000,
   });
 }

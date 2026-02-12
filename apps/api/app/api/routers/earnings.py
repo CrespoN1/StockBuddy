@@ -1,16 +1,17 @@
+import asyncio
 from datetime import datetime, timezone
 
-from arq import ArqRedis
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_arq_pool, get_current_user
+from app.api.deps import get_current_user
 from app.core.rate_limiter import AI_LIMIT, limiter
 from app.database import get_db
 from app.models import AnalysisJob, EarningsCall
 from app.schemas.analysis import JobStatus
 from app.schemas.earnings import EarningsAnalyzeRequest, EarningsCallRead
+from app.workers.tasks import run_earnings_analysis
 
 router = APIRouter(prefix="/stocks/{ticker}/earnings", tags=["earnings"])
 
@@ -40,9 +41,8 @@ async def analyze_earnings(
     body: EarningsAnalyzeRequest,
     db: AsyncSession = Depends(get_db),
     user_id: str = Depends(get_current_user),
-    arq_pool: ArqRedis = Depends(get_arq_pool),
 ):
-    """Enqueue an AI earnings analysis as a background job.
+    """Start an AI earnings analysis as a background task.
 
     Returns immediately with a pending job. Poll GET /analysis/jobs/{job_id}
     for status updates.
@@ -59,15 +59,13 @@ async def analyze_earnings(
     db.add(job)
     await db.flush()
     await db.refresh(job)
+    await db.commit()
 
-    # Enqueue background task
-    await arq_pool.enqueue_job(
-        "run_earnings_analysis",
-        job.id,
-        user_id,
-        ticker.upper(),
-        body.transcript,
+    # Run as inline background task (no separate worker needed)
+    asyncio.create_task(
+        run_earnings_analysis(
+            {}, str(job.id), user_id, ticker.upper(), body.transcript
+        )
     )
 
-    await db.commit()
     return job

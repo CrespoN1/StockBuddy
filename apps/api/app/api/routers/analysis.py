@@ -1,13 +1,15 @@
-from arq import ArqRedis
+import asyncio
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_arq_pool, get_current_user
+from app.api.deps import get_current_user
 from app.core.rate_limiter import AI_LIMIT, limiter
 from app.database import get_db
 from app.models import AnalysisJob
 from app.schemas.analysis import CompareRequest, JobStatus
+from app.workers.tasks import run_portfolio_analysis, run_comparison
 
 router = APIRouter(prefix="/analysis", tags=["analysis"])
 
@@ -19,9 +21,8 @@ async def analyze_portfolio(
     portfolio_id: int,
     db: AsyncSession = Depends(get_db),
     user_id: str = Depends(get_current_user),
-    arq_pool: ArqRedis = Depends(get_arq_pool),
 ):
-    """Enqueue an AI portfolio analysis as a background job.
+    """Start an AI portfolio analysis as a background task.
 
     Returns immediately with a pending job. Poll GET /analysis/jobs/{job_id}
     for status updates.
@@ -35,16 +36,13 @@ async def analyze_portfolio(
     db.add(job)
     await db.flush()
     await db.refresh(job)
+    await db.commit()
 
-    # Enqueue background task
-    await arq_pool.enqueue_job(
-        "run_portfolio_analysis",
-        job.id,
-        user_id,
-        portfolio_id,
+    # Run as inline background task (no separate worker needed)
+    asyncio.create_task(
+        run_portfolio_analysis({}, str(job.id), user_id, portfolio_id)
     )
 
-    await db.commit()
     return job
 
 
@@ -55,9 +53,8 @@ async def compare_earnings(
     body: CompareRequest,
     db: AsyncSession = Depends(get_db),
     user_id: str = Depends(get_current_user),
-    arq_pool: ArqRedis = Depends(get_arq_pool),
 ):
-    """Enqueue a multi-ticker comparison as a background job.
+    """Start a multi-ticker comparison as a background task.
 
     Returns immediately with a pending job. Poll GET /analysis/jobs/{job_id}
     for status updates.
@@ -71,16 +68,13 @@ async def compare_earnings(
     db.add(job)
     await db.flush()
     await db.refresh(job)
+    await db.commit()
 
-    # Enqueue background task
-    await arq_pool.enqueue_job(
-        "run_comparison",
-        job.id,
-        user_id,
-        body.tickers,
+    # Run as inline background task (no separate worker needed)
+    asyncio.create_task(
+        run_comparison({}, str(job.id), user_id, body.tickers)
     )
 
-    await db.commit()
     return job
 
 

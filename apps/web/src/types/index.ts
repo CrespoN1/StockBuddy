@@ -8,6 +8,8 @@ export type {
   StockFundamentals,
   OHLCVBar,
   TechnicalIndicators,
+  NewsArticle,
+  StockForecast,
 } from "./stock";
 export type { EarningsCallRead } from "./earnings";
 export type {

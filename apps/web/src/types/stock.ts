@@ -68,3 +68,46 @@ export interface TechnicalIndicators {
   support: number | null;
   resistance: number | null;
 }
+
+export interface NewsArticle {
+  title: string;
+  url: string;
+  source: string;
+  published_at: string;
+  summary: string;
+  banner_image: string;
+  overall_sentiment_score: number;
+  overall_sentiment_label: string;
+  ticker_sentiment_score: number;
+  ticker_sentiment_label: string;
+  ticker_relevance: number;
+}
+
+export interface StockForecast {
+  ticker: string;
+  current_price: number;
+  forecast_days: number;
+  trend_signal: string;
+  predicted_price: number;
+  price_change: number;
+  pct_change: number;
+  rsi: number;
+  ma_20: number;
+  ma_50: number;
+  historical: {
+    dates: string[];
+    prices: number[];
+  };
+  forecast: {
+    dates: string[];
+    prices: number[];
+    upper_bound: number[];
+    lower_bound: number[];
+  };
+  model_info: {
+    method: string;
+    training_period: string;
+    slope_per_day: number;
+    r_squared: number;
+  };
+}

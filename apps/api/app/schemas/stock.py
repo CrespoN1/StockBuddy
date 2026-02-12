@@ -70,3 +70,52 @@ class TechnicalIndicators(BaseModel):
     volume_ratio: float = 1.0
     support: float | None = None
     resistance: float | None = None
+
+
+class NewsArticle(BaseModel):
+    title: str
+    url: str
+    source: str
+    published_at: str
+    summary: str
+    banner_image: str = ""
+    overall_sentiment_score: float = 0.0
+    overall_sentiment_label: str = ""
+    ticker_sentiment_score: float = 0.0
+    ticker_sentiment_label: str = "Neutral"
+    ticker_relevance: float = 0.0
+
+
+class ForecastHistorical(BaseModel):
+    dates: list[str]
+    prices: list[float]
+
+
+class ForecastPrediction(BaseModel):
+    dates: list[str]
+    prices: list[float]
+    upper_bound: list[float]
+    lower_bound: list[float]
+
+
+class ForecastModelInfo(BaseModel):
+    method: str
+    training_period: str
+    slope_per_day: float
+    r_squared: float
+
+
+class StockForecast(BaseModel):
+    ticker: str
+    current_price: float
+    forecast_days: int
+    trend_signal: str
+    predicted_price: float
+    price_change: float
+    pct_change: float
+    rsi: float
+    ma_20: float
+    ma_50: float
+    historical: ForecastHistorical
+    forecast: ForecastPrediction
+    model_info: ForecastModelInfo

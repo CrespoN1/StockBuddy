@@ -20,6 +20,8 @@ import { ErrorState } from "@/components/ui/error-state";
 import { CandlestickChart } from "@/components/stock/candlestick-chart";
 import { TechnicalsPanel } from "@/components/stock/technicals-panel";
 import { FundamentalsCard } from "@/components/stock/fundamentals-card";
+import { NewsPanel } from "@/components/stock/news-panel";
+import { ForecastPanel } from "@/components/stock/forecast-panel";
 import { useStockInfo, useStockQuote, useStockHistory } from "@/hooks/use-stocks";
 import { useEarnings } from "@/hooks/use-earnings";
 import { formatCurrency, formatDate } from "@/lib/format";
@@ -93,9 +95,11 @@ export default function StockDetailPage() {
       </div>
 
       <Tabs defaultValue="chart" className="mt-6">
-        <TabsList>
+        <TabsList className="flex-wrap">
           <TabsTrigger value="chart">Chart</TabsTrigger>
           <TabsTrigger value="company">Company</TabsTrigger>
+          <TabsTrigger value="news">News</TabsTrigger>
+          <TabsTrigger value="forecast">Forecast</TabsTrigger>
           <TabsTrigger value="earnings">Earnings</TabsTrigger>
         </TabsList>
 
@@ -128,6 +132,14 @@ export default function StockDetailPage() {
 
         <TabsContent value="company">
           <FundamentalsCard ticker={ticker} />
+        </TabsContent>
+
+        <TabsContent value="news">
+          <NewsPanel ticker={ticker} />
+        </TabsContent>
+
+        <TabsContent value="forecast">
+          <ForecastPanel ticker={ticker} />
         </TabsContent>
 
         <TabsContent value="earnings" className="space-y-4">

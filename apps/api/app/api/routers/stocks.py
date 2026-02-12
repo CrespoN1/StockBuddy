@@ -3,14 +3,16 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from app.api.deps import get_current_user
 from app.core.rate_limiter import SEARCH_LIMIT, limiter
 from app.schemas.stock import (
+    NewsArticle,
     OHLCVBar,
+    StockForecast,
     StockFundamentals,
     StockInfo,
     StockQuote,
     StockSearchResult,
     TechnicalIndicators,
 )
-from app.services import market_data, search, stock_data, technical_analysis
+from app.services import forecast, market_data, news, search, stock_data, technical_analysis
 
 router = APIRouter(prefix="/stocks", tags=["stocks"])
 
@@ -73,3 +75,26 @@ async def get_technicals(
     if result is None:
         raise HTTPException(404, f"Could not compute technicals for {ticker}")
     return result
+
+
+@router.get("/{ticker}/news", response_model=list[NewsArticle])
+async def get_stock_news(
+    ticker: str,
+    limit: int = Query(10, ge=1, le=50),
+    _user_id: str = Depends(get_current_user),
+):
+    """Get recent news articles with sentiment for a stock."""
+    return await news.get_stock_news(ticker, limit=limit)
+
+
+@router.get("/{ticker}/forecast", response_model=StockForecast)
+async def get_stock_forecast(
+    ticker: str,
+    days: int = Query(30, ge=7, le=90),
+    _user_id: str = Depends(get_current_user),
+):
+    """Get price forecast for a stock using predictive model."""
+    result = await forecast.get_forecast(ticker, forecast_days=days)
+    if "error" in result:
+        raise HTTPException(400, result["error"])
+    return StockForecast(**result)
