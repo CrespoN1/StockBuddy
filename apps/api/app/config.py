@@ -13,8 +13,18 @@ class Settings(BaseSettings):
     debug: bool = False
     log_level: str = "INFO"
 
-    # Database
+    # Database — Railway provides postgresql://, we need postgresql+asyncpg://
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/stockbuddy"
+
+    @property
+    def async_database_url(self) -> str:
+        """Return database URL with asyncpg driver, converting if needed."""
+        url = self.database_url
+        if url.startswith("postgresql://"):
+            url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        elif url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+        return url
 
     # Redis
     redis_url: str = "redis://localhost:6379/0"
