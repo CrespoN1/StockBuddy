@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
+import sqlalchemy as sa
 from sqlalchemy import Column, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Field, Relationship, SQLModel
@@ -19,7 +20,7 @@ class EarningsCall(SQLModel, table=True):
     holding_id: int | None = Field(default=None, foreign_key="holding.id", index=True)
     ticker: str = Field(index=True)
 
-    call_date: datetime | None = None
+    call_date: datetime | None = Field(default=None, sa_type=sa.DateTime(timezone=True))
     extracted_text: str | None = Field(default=None, sa_column=Column(Text))
     summary: str | None = Field(default=None, sa_column=Column(Text))
     key_metrics: dict | None = Field(default=None, sa_column=Column(JSONB))
@@ -30,6 +31,9 @@ class EarningsCall(SQLModel, table=True):
     growth_mentions: int | None = None
     guidance_outlook: str | None = None  # "positive", "neutral", "negative"
 
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_type=sa.DateTime(timezone=True),
+    )
 
     holding: "Holding" = Relationship(back_populates="earnings_calls")

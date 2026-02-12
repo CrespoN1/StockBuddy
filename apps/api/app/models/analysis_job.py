@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
+import sqlalchemy as sa
 from sqlalchemy import Column, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Field, SQLModel
@@ -20,6 +21,9 @@ class AnalysisJob(SQLModel, table=True):
     result: dict | None = Field(default=None, sa_column=Column(JSONB))
     error: str | None = Field(default=None, sa_column=Column(Text))
 
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    started_at: datetime | None = None
-    completed_at: datetime | None = None
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_type=sa.DateTime(timezone=True),
+    )
+    started_at: datetime | None = Field(default=None, sa_type=sa.DateTime(timezone=True))
+    completed_at: datetime | None = Field(default=None, sa_type=sa.DateTime(timezone=True))

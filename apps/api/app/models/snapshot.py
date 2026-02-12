@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
+import sqlalchemy as sa
 from sqlmodel import Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
@@ -16,7 +17,10 @@ class PortfolioSnapshot(SQLModel, table=True):
     user_id: str = Field(index=True)
     portfolio_id: int = Field(foreign_key="portfolio.id", index=True)
 
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_type=sa.DateTime(timezone=True),
+    )
 
     # Financial metrics
     total_value: float | None = None

@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
+import sqlalchemy as sa
 from sqlmodel import Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
@@ -14,8 +15,14 @@ class Portfolio(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     user_id: str = Field(index=True)
     name: str
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_type=sa.DateTime(timezone=True),
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_type=sa.DateTime(timezone=True),
+    )
 
     holdings: list["Holding"] = Relationship(back_populates="portfolio")
     snapshots: list["PortfolioSnapshot"] = Relationship(back_populates="portfolio")

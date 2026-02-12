@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
+import sqlalchemy as sa
 from sqlmodel import Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
@@ -24,11 +25,19 @@ class Holding(SQLModel, table=True):
     dividend_yield: float | None = None
 
     # Earnings tracking
-    latest_earnings_call: datetime | None = None
+    latest_earnings_call: datetime | None = Field(
+        default=None, sa_type=sa.DateTime(timezone=True)
+    )
     earnings_call_summary: str | None = None
 
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_type=sa.DateTime(timezone=True),
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_type=sa.DateTime(timezone=True),
+    )
 
     portfolio: "Portfolio" = Relationship(back_populates="holdings")
     earnings_calls: list["EarningsCall"] = Relationship(back_populates="holding")
