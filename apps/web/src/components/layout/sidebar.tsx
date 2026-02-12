@@ -13,10 +13,10 @@ import { cn } from "@/lib/utils";
 
 export const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/dashboard/portfolios", label: "Portfolios", icon: Briefcase },
-  { href: "/dashboard/stocks", label: "Stocks", icon: Search },
-  { href: "/dashboard/earnings", label: "Earnings", icon: BarChart3 },
-  { href: "/dashboard/compare", label: "Compare", icon: GitCompareArrows },
+  { href: "/portfolios", label: "Portfolios", icon: Briefcase },
+  { href: "/stocks", label: "Stocks", icon: Search },
+  { href: "/earnings", label: "Earnings", icon: BarChart3 },
+  { href: "/compare", label: "Compare", icon: GitCompareArrows },
 ];
 
 interface SidebarNavProps {

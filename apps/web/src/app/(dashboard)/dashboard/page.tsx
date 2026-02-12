@@ -88,7 +88,7 @@ export default function DashboardPage() {
             description="Create your first portfolio and add holdings to get started with AI-powered analysis."
             action={
               <Button asChild>
-                <Link href="/dashboard/portfolios">
+                <Link href="/portfolios">
                   <Plus className="mr-2 h-4 w-4" />
                   Create Portfolio
                 </Link>
@@ -157,14 +157,14 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold">Your Portfolios</h3>
           <Button variant="outline" size="sm" asChild>
-            <Link href="/dashboard/portfolios">View all</Link>
+            <Link href="/portfolios">View all</Link>
           </Button>
         </div>
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {portfolios.slice(0, 6).map((portfolio) => (
             <Link
               key={portfolio.id}
-              href={`/dashboard/portfolios/${portfolio.id}`}
+              href={`/portfolios/${portfolio.id}`}
             >
               <Card className="transition-colors hover:bg-accent">
                 <CardHeader className="pb-2">
