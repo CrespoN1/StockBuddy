@@ -160,29 +160,38 @@ async def compare_multiple_earnings(
 ) -> str:
     """Compare earnings calls across multiple companies.
 
-    Prompt preserved from EnhancedAIExplainer.compare_multiple_earnings.
+    Prompt preserved from EnhancedAIExplainer.compare_multiple_earnings,
+    enhanced to include full earnings analysis summaries for richer comparison.
     """
     comparison_data = ""
     for ticker, analysis in zip(tickers, analyses):
+        key_themes = analysis.get("key_themes", "")
+        sentiment = analysis.get("sentiment", "Neutral")
+        guidance = analysis.get("guidance", "")
+
         comparison_data += f"""
-        {ticker}:
-        - Sentiment: {analysis.get('sentiment', 'Neutral')}
-        - Key Themes: {analysis.get('key_themes', '')}
-        - Guidance: {analysis.get('guidance', '')}
+        === {ticker} ===
+        Sentiment: {sentiment}
+        Guidance Outlook: {guidance}
+        Earnings Analysis Summary:
+        {key_themes if key_themes else 'No earnings data available.'}
         """
 
     prompt = f"""
-    Compare these earnings calls across companies:
+    You are an investment analyst comparing recent earnings across companies.
+    Use ONLY the data provided below. Do NOT use hypothetical scenarios.
+    If data is missing for a company, note it but focus analysis on companies with data.
 
     {comparison_data}
 
-    Provide a comparative analysis:
-    1. INDUSTRY TRENDS (Common themes across companies)
-    2. RELATIVE PERFORMANCE (Which companies outperformed)
-    3. OUTLOOK COMPARISON (Which have more positive guidance)
+    Provide a detailed comparative analysis:
+    1. INDUSTRY TRENDS (Common themes across these companies)
+    2. RELATIVE PERFORMANCE (Which companies outperformed based on their earnings)
+    3. OUTLOOK COMPARISON (Which have more positive guidance and why)
     4. RISK COMPARISON (Which face similar/different risks)
     5. INVESTMENT IMPLICATIONS (For sector/industry investors)
 
-    Highlight differences and similarities in management tone and outlook.
+    Base your analysis strictly on the earnings data provided above.
+    Highlight specific differences and similarities in management tone and outlook.
     """
     return await _call_ai_api(prompt)
