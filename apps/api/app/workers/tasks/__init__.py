@@ -183,10 +183,11 @@ async def _ensure_earnings_data(
 
         # Get current price
         price = await market_data.get_latest_price(ticker)
+        price_str = f"${price:.2f}" if price is not None else "N/A"
 
         analysis_context = f"""
 Stock: {ticker}
-Current Price: {f'${price:.2f}' if price else 'N/A'}
+Current Price: {price_str}
 Sector: {fundamentals.get('sector', 'N/A')}
 Market Cap: {fundamentals.get('market_cap', 'N/A')}
 P/E Ratio: {fundamentals.get('pe_ratio', 'N/A')}
