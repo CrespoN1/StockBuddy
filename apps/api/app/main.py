@@ -57,15 +57,20 @@ async def lifespan(app: FastAPI):
     settings.validate_production()
 
     # Startup — create arq Redis connection pool
-    redis_settings = RedisSettings.from_dsn(settings.redis_url)
-    app.state.arq_pool = await create_pool(redis_settings)
-    logger.info("arq connection pool created")
+    try:
+        redis_settings = RedisSettings.from_dsn(settings.redis_url)
+        app.state.arq_pool = await create_pool(redis_settings)
+        logger.info("arq connection pool created")
+    except Exception as exc:
+        logger.warning("Could not connect to Redis, arq jobs disabled", error=str(exc))
+        app.state.arq_pool = None
 
     yield
 
     # Shutdown — close arq pool and DB engine
-    await app.state.arq_pool.close()
-    logger.info("arq connection pool closed")
+    if app.state.arq_pool is not None:
+        await app.state.arq_pool.close()
+        logger.info("arq connection pool closed")
 
     from app.database import engine
 
