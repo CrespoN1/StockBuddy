@@ -1,7 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
+from app.core.rate_limiter import AI_LIMIT, limiter
 from app.database import get_db
 from app.schemas.holding import HoldingCreate, HoldingRead, HoldingUpdate
 from app.services import portfolio as portfolio_svc
@@ -59,3 +64,18 @@ async def delete_holding(
     deleted = await portfolio_svc.delete_holding(db, user_id, portfolio_id, holding_id)
     if not deleted:
         raise HTTPException(404, "Holding not found")
+
+
+@router.post("/refresh", response_model=list[HoldingRead])
+@limiter.limit(AI_LIMIT)
+async def refresh_holdings(
+    request: "Request",
+    portfolio_id: int,
+    db: AsyncSession = Depends(get_db),
+    user_id: str = Depends(get_current_user),
+):
+    """Refresh market data (price, sector, beta) for all holdings in a portfolio."""
+    holdings = await portfolio_svc.refresh_holdings(db, user_id, portfolio_id)
+    if holdings is None:
+        raise HTTPException(404, "Portfolio not found")
+    return holdings

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   Table,
@@ -22,7 +22,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { useUpdateHolding, useDeleteHolding } from "@/hooks/use-holdings";
+import { useUpdateHolding, useDeleteHolding, useRefreshHoldings } from "@/hooks/use-holdings";
 import { formatCurrency, formatNumber } from "@/lib/format";
 import type { HoldingRead } from "@/types";
 import { holdingValue } from "@/types";
@@ -37,6 +37,7 @@ export function HoldingsTable({ holdings, portfolioId }: HoldingsTableProps) {
   const [editShares, setEditShares] = useState("");
   const updateHolding = useUpdateHolding(portfolioId);
   const deleteHolding = useDeleteHolding(portfolioId);
+  const refreshHoldings = useRefreshHoldings(portfolioId);
 
   function handleEditSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -70,8 +71,26 @@ export function HoldingsTable({ holdings, portfolioId }: HoldingsTableProps) {
     );
   }
 
+  function handleRefresh() {
+    refreshHoldings.mutate(undefined, {
+      onSuccess: () => toast.success("Prices refreshed"),
+      onError: (err) => toast.error(err.message),
+    });
+  }
+
   return (
     <>
+      <div className="flex justify-end mb-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRefresh}
+          disabled={refreshHoldings.isPending}
+        >
+          <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${refreshHoldings.isPending ? "animate-spin" : ""}`} />
+          {refreshHoldings.isPending ? "Refreshing..." : "Refresh Prices"}
+        </Button>
+      </div>
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -99,7 +118,7 @@ export function HoldingsTable({ holdings, portfolioId }: HoldingsTableProps) {
                 </TableCell>
                 <TableCell className="text-right">{h.shares}</TableCell>
                 <TableCell className="text-right">
-                  {h.last_price != null ? formatCurrency(h.last_price) : "--"}
+                  {h.last_price ? formatCurrency(h.last_price) : "--"}
                 </TableCell>
                 <TableCell className="text-right">
                   {formatCurrency(holdingValue(h))}

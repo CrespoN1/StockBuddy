@@ -82,21 +82,26 @@ async def add_holding(
 
     ticker = ticker.upper()
 
-    # Fetch market data
+    # Fetch market data — price and fundamentals independently so a rate-limit
+    # on one call doesn't lose the other's data.
     last_price = 0.0
     sector: str | None = "Unknown"
     beta: float | None = 1.0
     dividend_yield: float | None = None
 
     try:
-        fundamentals = await market_data.get_stock_fundamentals(ticker)
         price = await market_data.get_latest_price(ticker)
         last_price = price or 0.0
+    except Exception as exc:
+        logger.warning("Price fetch failed for %s: %s", ticker, exc)
+
+    try:
+        fundamentals = await market_data.get_stock_fundamentals(ticker)
         sector = fundamentals.get("sector") or "Unknown"
         beta = fundamentals.get("beta") or 1.0
         dividend_yield = fundamentals.get("dividend_yield")
     except Exception as exc:
-        logger.warning("Market data fetch failed for %s: %s", ticker, exc)
+        logger.warning("Fundamentals fetch failed for %s: %s", ticker, exc)
 
     holding = Holding(
         user_id=user_id,
@@ -112,6 +117,40 @@ async def add_holding(
     await db.flush()
     await db.refresh(holding)
     return holding
+
+
+async def refresh_holdings(
+    db: AsyncSession, user_id: str, portfolio_id: int
+) -> list[Holding] | None:
+    """Refresh market data for all holdings in a portfolio."""
+    portfolio = await get_portfolio(db, user_id, portfolio_id)
+    if portfolio is None:
+        return None
+
+    holdings = await get_holdings(db, user_id, portfolio_id)
+    for h in holdings:
+        try:
+            price = await market_data.get_latest_price(h.ticker)
+            if price is not None:
+                h.last_price = price
+        except Exception as exc:
+            logger.warning("Price refresh failed for %s: %s", h.ticker, exc)
+
+        try:
+            fundamentals = await market_data.get_stock_fundamentals(h.ticker)
+            h.sector = fundamentals.get("sector") or h.sector
+            h.beta = fundamentals.get("beta") or h.beta
+            h.dividend_yield = fundamentals.get("dividend_yield")
+        except Exception as exc:
+            logger.warning("Fundamentals refresh failed for %s: %s", h.ticker, exc)
+
+        h.updated_at = datetime.now(timezone.utc)
+        db.add(h)
+
+    await db.flush()
+    for h in holdings:
+        await db.refresh(h)
+    return holdings
 
 
 async def get_holdings(db: AsyncSession, user_id: str, portfolio_id: int) -> list[Holding]:

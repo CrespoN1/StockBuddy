@@ -24,10 +24,18 @@ def _require_api_key() -> None:
         raise MarketDataError("Missing ALPHA_VANTAGE_API_KEY in environment.")
 
 
-@retry(stop=stop_after_attempt(3), wait=wait_exponential(min=1, max=10))
+def _check_rate_limit(data: dict) -> bool:
+    """Return True if the API response indicates a rate limit hit."""
+    if "Note" in data or "Information" in data:
+        logger.warning("Alpha Vantage rate limit hit: %s", data.get("Note") or data.get("Information"))
+        return True
+    return False
+
+
+@retry(stop=stop_after_attempt(2), wait=wait_exponential(min=2, max=10))
 async def get_stock_fundamentals(ticker: str) -> dict:
     """
-    Fetch stock overview and upcoming earnings date from Alpha Vantage.
+    Fetch stock overview from Alpha Vantage.
 
     Returns dict with keys: price, currency, sector, beta, dividend_yield,
     next_earnings_date, market_cap, pe_ratio.
@@ -47,7 +55,6 @@ async def get_stock_fundamentals(ticker: str) -> dict:
     }
 
     async with httpx.AsyncClient(timeout=10.0) as client:
-        # --- Company overview ---
         overview_resp = await client.get(
             settings.alpha_vantage_base_url,
             params={
@@ -59,6 +66,8 @@ async def get_stock_fundamentals(ticker: str) -> dict:
 
         if overview_resp.status_code == 200:
             data = overview_resp.json()
+            if _check_rate_limit(data):
+                return result
             result["sector"] = data.get("Sector") or None
             result["market_cap"] = data.get("MarketCapitalization") or None
             result["pe_ratio"] = data.get("PERatio") or None
@@ -71,35 +80,15 @@ async def get_stock_fundamentals(ticker: str) -> dict:
                     except (ValueError, TypeError):
                         pass
 
-        # --- Earnings calendar ---
-        try:
-            earnings_resp = await client.get(
-                settings.alpha_vantage_base_url,
-                params={
-                    "function": "EARNINGS_CALENDAR",
-                    "symbol": ticker,
-                    "horizon": "3month",
-                    "apikey": settings.alpha_vantage_api_key,
-                },
-            )
-            if earnings_resp.status_code == 200:
-                earnings_data = earnings_resp.json()
-                if isinstance(earnings_data, dict) and "earningsCalendar" in earnings_data:
-                    cal = earnings_data["earningsCalendar"]
-                    if cal:
-                        result["next_earnings_date"] = cal[0].get("reportDate")
-        except (httpx.HTTPError, KeyError, IndexError) as exc:
-            logger.warning("Failed to fetch earnings calendar for %s: %s", ticker, exc)
-
     return result
 
 
-@retry(stop=stop_after_attempt(3), wait=wait_exponential(min=1, max=10))
+@retry(stop=stop_after_attempt(2), wait=wait_exponential(min=2, max=10))
 async def get_latest_price(ticker: str) -> float | None:
     """Fetch the latest price via GLOBAL_QUOTE."""
     _require_api_key()
 
-    async with httpx.AsyncClient(timeout=5.0) as client:
+    async with httpx.AsyncClient(timeout=10.0) as client:
         resp = await client.get(
             settings.alpha_vantage_base_url,
             params={
@@ -110,6 +99,8 @@ async def get_latest_price(ticker: str) -> float | None:
         )
         if resp.status_code == 200:
             data = resp.json()
+            if _check_rate_limit(data):
+                return None
             try:
                 return float(data["Global Quote"]["05. price"])
             except (KeyError, ValueError, TypeError):

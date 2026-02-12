@@ -52,6 +52,22 @@ export function useUpdateHolding(portfolioId: number) {
   });
 }
 
+export function useRefreshHoldings(portfolioId: number) {
+  const fetchApi = useApiFetch();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      fetchApi<HoldingRead[]>(
+        `/api/v1/portfolios/${portfolioId}/holdings/refresh`,
+        { method: "POST" }
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["portfolios", portfolioId, "holdings"] });
+      queryClient.invalidateQueries({ queryKey: ["portfolios", portfolioId] });
+    },
+  });
+}
+
 export function useDeleteHolding(portfolioId: number) {
   const fetchApi = useApiFetch();
   const queryClient = useQueryClient();
