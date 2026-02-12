@@ -46,7 +46,7 @@ export default function StockDetailPage() {
     return (
       <div>
         <Button variant="ghost" size="sm" asChild>
-          <Link href="/dashboard/stocks">
+          <Link href="/stocks">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back
           </Link>
@@ -62,7 +62,7 @@ export default function StockDetailPage() {
     <div>
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" asChild>
-          <Link href="/dashboard/stocks">
+          <Link href="/stocks">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
@@ -200,7 +200,7 @@ export default function StockDetailPage() {
                 No earnings data available for {ticker.toUpperCase()}. Run an
                 analysis from the{" "}
                 <Link
-                  href="/dashboard/earnings"
+                  href="/earnings"
                   className="text-primary hover:underline"
                 >
                   Earnings page

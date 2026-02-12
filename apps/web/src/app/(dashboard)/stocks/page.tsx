@@ -30,7 +30,7 @@ export default function StocksPage() {
 
       {selectedTicker ? (
         <div className="mt-6">
-          <Link href={`/dashboard/stocks/${selectedTicker}`}>
+          <Link href={`/stocks/${selectedTicker}`}>
             <Card className="max-w-md transition-colors hover:bg-accent">
               <CardContent className="flex items-center gap-3 p-4">
                 <TrendingUp className="h-5 w-5 text-primary" />

@@ -47,7 +47,7 @@ export default function PortfolioDetailPage() {
     <div>
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" asChild>
-          <Link href="/dashboard/portfolios">
+          <Link href="/portfolios">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>

@@ -23,7 +23,7 @@ export function PortfolioCard({ portfolio, onEdit, onDelete }: PortfolioCardProp
   return (
     <Card className="transition-colors hover:bg-accent/50">
       <CardHeader className="flex flex-row items-start justify-between pb-2">
-        <Link href={`/dashboard/portfolios/${portfolio.id}`} className="flex-1">
+        <Link href={`/portfolios/${portfolio.id}`} className="flex-1">
           <CardTitle className="text-base">{portfolio.name}</CardTitle>
         </Link>
         <DropdownMenu>
@@ -48,7 +48,7 @@ export function PortfolioCard({ portfolio, onEdit, onDelete }: PortfolioCardProp
         </DropdownMenu>
       </CardHeader>
       <CardContent>
-        <Link href={`/dashboard/portfolios/${portfolio.id}`}>
+        <Link href={`/portfolios/${portfolio.id}`}>
           <p className="text-sm text-muted-foreground">
             Created {formatDate(portfolio.created_at)}
           </p>

@@ -91,7 +91,7 @@ export function HoldingsTable({ holdings, portfolioId }: HoldingsTableProps) {
               <TableRow key={h.id}>
                 <TableCell className="font-medium">
                   <Link
-                    href={`/dashboard/stocks/${h.ticker}`}
+                    href={`/stocks/${h.ticker}`}
                     className="text-primary hover:underline"
                   >
                     {h.ticker}
