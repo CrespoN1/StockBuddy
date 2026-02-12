@@ -71,15 +71,27 @@ class Settings(BaseSettings):
         required = {
             "database_url": self.database_url,
             "redis_url": self.redis_url,
-            "clerk_jwks_url": self.clerk_jwks_url,
-            "clerk_secret_key": self.clerk_secret_key,
-            "deepseek_api_key": self.deepseek_api_key,
         }
 
         missing = [name for name, value in required.items() if not value]
         if missing:
             raise RuntimeError(
                 f"Missing required production settings: {', '.join(missing)}"
+            )
+
+        # Warn about optional but recommended settings
+        recommended = {
+            "clerk_jwks_url": self.clerk_jwks_url,
+            "clerk_secret_key": self.clerk_secret_key,
+            "deepseek_api_key": self.deepseek_api_key,
+        }
+        missing_recommended = [name for name, value in recommended.items() if not value]
+        if missing_recommended:
+            import structlog
+            logger = structlog.stdlib.get_logger(__name__)
+            logger.warning(
+                "Missing recommended production settings (some features disabled)",
+                missing=missing_recommended,
             )
 
 

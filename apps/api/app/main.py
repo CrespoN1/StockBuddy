@@ -82,7 +82,7 @@ app = FastAPI(
     title="StockBuddy API",
     version="0.1.0",
     lifespan=lifespan,
-    docs_url="/docs" if settings.environment != "production" else None,
+    docs_url="/docs",
     redoc_url=None,
 )
 
