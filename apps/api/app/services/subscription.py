@@ -18,15 +18,16 @@ logger = structlog.stdlib.get_logger(__name__)
 
 # ─── Plan limits ─────────────────────────────────────────────────────
 
+# MVP: Free tier unlocked (same as Pro). Tighten these when ready to monetize.
 FREE_LIMITS = {
-    "portfolios": 1,
-    "holdings_per_portfolio": 10,
-    "earnings_analysis_per_month": 3,
-    "portfolio_analysis_per_month": 1,
-    "can_compare": False,
-    "can_forecast": False,
-    "can_export_csv": False,
-    "show_sentiment_scores": False,
+    "portfolios": None,  # unlimited during MVP
+    "holdings_per_portfolio": None,
+    "earnings_analysis_per_month": None,
+    "portfolio_analysis_per_month": None,
+    "can_compare": True,
+    "can_forecast": True,
+    "can_export_csv": True,
+    "show_sentiment_scores": True,
 }
 
 PRO_LIMITS = {

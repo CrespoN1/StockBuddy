@@ -13,11 +13,11 @@ async def test_create_portfolio(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_list_portfolios(client: AsyncClient):
-    """Free plan allows 1 portfolio — verify listing works."""
     await client.post("/api/v1/portfolios", json={"name": "A"})
+    await client.post("/api/v1/portfolios", json={"name": "B"})
     resp = await client.get("/api/v1/portfolios")
     assert resp.status_code == 200
-    assert len(resp.json()) == 1
+    assert len(resp.json()) == 2
 
 
 @pytest.mark.asyncio

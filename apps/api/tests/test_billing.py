@@ -9,49 +9,50 @@ async def test_get_subscription_default_free(client: AsyncClient):
     assert resp.status_code == 200
     data = resp.json()
     assert data["plan"] == "free"
-    assert data["earnings_analysis_limit"] == 3
-    assert data["portfolio_analysis_limit"] == 1
-    assert data["portfolio_limit"] == 1
-    assert data["holdings_per_portfolio_limit"] == 10
+    # MVP: limits are None (unlimited) for free tier
+    assert data["earnings_analysis_limit"] is None
+    assert data["portfolio_analysis_limit"] is None
+    assert data["portfolio_limit"] is None
+    assert data["holdings_per_portfolio_limit"] is None
 
 
 @pytest.mark.asyncio
 async def test_get_usage_defaults(client: AsyncClient):
-    """New free user should have all usage at zero."""
+    """New free user should have all usage at zero with everything unlocked (MVP)."""
     resp = await client.get("/api/v1/billing/usage")
     assert resp.status_code == 200
     data = resp.json()
     assert data["plan"] == "free"
     assert data["earnings_analysis_used"] == 0
     assert data["portfolio_analysis_used"] == 0
-    assert data["can_create_portfolio"] is True  # 0 < 1
-    assert data["can_analyze_earnings"] is True  # 0 < 3
-    assert data["can_analyze_portfolio"] is True  # 0 < 1
-    assert data["can_compare"] is False
-    assert data["can_forecast"] is False
-    assert data["can_export_csv"] is False
+    assert data["can_create_portfolio"] is True
+    assert data["can_analyze_earnings"] is True
+    assert data["can_analyze_portfolio"] is True
+    # MVP: all features unlocked for free users
+    assert data["can_compare"] is True
+    assert data["can_forecast"] is True
+    assert data["can_export_csv"] is True
 
 
 @pytest.mark.asyncio
-async def test_free_user_portfolio_limit(client: AsyncClient):
-    """Free user should be blocked from creating a 2nd portfolio."""
+async def test_free_user_can_create_multiple_portfolios(client: AsyncClient):
+    """MVP: free users can create unlimited portfolios."""
     resp1 = await client.post("/api/v1/portfolios", json={"name": "First"})
     assert resp1.status_code == 201
 
     resp2 = await client.post("/api/v1/portfolios", json={"name": "Second"})
-    assert resp2.status_code == 403
-    assert "Upgrade to Pro" in resp2.json()["detail"]
+    assert resp2.status_code == 201
 
 
 @pytest.mark.asyncio
-async def test_free_user_compare_blocked(client: AsyncClient):
-    """Free user should not be able to compare stocks."""
+async def test_free_user_can_compare(client: AsyncClient):
+    """MVP: free users can access comparison (returns 202 for the job)."""
     resp = await client.post(
         "/api/v1/analysis/compare",
         json={"tickers": ["AAPL", "MSFT"]},
     )
-    assert resp.status_code == 403
-    assert "Pro plan" in resp.json()["detail"]
+    # 202 = job created (not 403)
+    assert resp.status_code == 202
 
 
 @pytest.mark.asyncio
