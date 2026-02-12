@@ -41,3 +41,7 @@ htmlcov/
 
 # Sentry
 .sentryclirc
+.vercel
+
+# Claude Code local settings (may contain tokens)
+.claude/settings.local.json
