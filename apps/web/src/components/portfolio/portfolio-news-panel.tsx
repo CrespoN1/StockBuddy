@@ -81,7 +81,7 @@ export function PortfolioNewsPanel({ portfolioId }: PortfolioNewsPanelProps) {
                   {article.ticker_sentiment_label}
                 </Badge>
                 <span className="text-xs text-muted-foreground">
-                  {article.ticker_sentiment_score.toFixed(3)}
+                  {(article.ticker_sentiment_score ?? 0).toFixed(3)}
                 </span>
               </div>
             </div>

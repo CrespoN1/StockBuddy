@@ -36,7 +36,7 @@ def _compute_technicals_sync(ticker: str) -> dict | None:
         delta = df["Close"].diff()
         gain = delta.where(delta > 0, 0).rolling(window=14).mean()
         loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
-        rs = gain / loss
+        rs = gain / loss.where(loss > 0, 1)
         rsi_raw = rs.iloc[-1]
         rsi = 100 - (100 / (1 + rsi_raw)) if not pd.isna(rsi_raw) else 50.0
 

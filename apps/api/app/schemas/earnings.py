@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class EarningsCallRead(BaseModel):
@@ -22,4 +22,4 @@ class EarningsCallRead(BaseModel):
 class EarningsAnalyzeRequest(BaseModel):
     """Request body for triggering earnings analysis."""
 
-    transcript: str | None = None  # If user provides transcript directly
+    transcript: str | None = Field(None, max_length=100000)  # If user provides transcript directly

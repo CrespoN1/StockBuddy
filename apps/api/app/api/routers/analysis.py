@@ -1,5 +1,6 @@
 import asyncio
 
+import structlog
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,7 +10,19 @@ from app.core.rate_limiter import AI_LIMIT, limiter
 from app.database import get_db
 from app.models import AnalysisJob
 from app.schemas.analysis import CompareRequest, JobStatus
+from app.services import portfolio as portfolio_svc
 from app.workers.tasks import run_portfolio_analysis, run_comparison
+
+logger = structlog.stdlib.get_logger(__name__)
+
+
+def _log_task_exception(task: asyncio.Task) -> None:
+    if task.cancelled():
+        return
+    exc = task.exception()
+    if exc:
+        logger.error("Background task failed", error=str(exc), exc_info=exc)
+
 
 router = APIRouter(prefix="/analysis", tags=["analysis"])
 
@@ -27,6 +40,10 @@ async def analyze_portfolio(
     Returns immediately with a pending job. Poll GET /analysis/jobs/{job_id}
     for status updates.
     """
+    portfolio = await portfolio_svc.get_portfolio(db, user_id, portfolio_id)
+    if portfolio is None:
+        raise HTTPException(404, "Portfolio not found")
+
     job = AnalysisJob(
         user_id=user_id,
         job_type="portfolio_analysis",
@@ -39,9 +56,10 @@ async def analyze_portfolio(
     await db.commit()
 
     # Run as inline background task (no separate worker needed)
-    asyncio.create_task(
+    task = asyncio.create_task(
         run_portfolio_analysis({}, str(job.id), user_id, portfolio_id)
     )
+    task.add_done_callback(_log_task_exception)
 
     return job
 
@@ -71,9 +89,10 @@ async def compare_earnings(
     await db.commit()
 
     # Run as inline background task (no separate worker needed)
-    asyncio.create_task(
+    task = asyncio.create_task(
         run_comparison({}, str(job.id), user_id, body.tickers)
     )
+    task.add_done_callback(_log_task_exception)
 
     return job
 

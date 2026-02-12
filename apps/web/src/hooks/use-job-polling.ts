@@ -21,7 +21,6 @@ const POLL_INTERVAL_MS = 2000;
  */
 export function useJobPolling() {
   const { getToken } = useAuth();
-  const fetchApi = createClientFetch(getToken);
 
   const [job, setJob] = useState<JobStatus | null>(null);
   const [isPolling, setIsPolling] = useState(false);
@@ -42,16 +41,19 @@ export function useJobPolling() {
       return;
     }
 
-    setJob(pendingJob);
-    setIsPolling(true);
+    // Stop any previous polling first
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
 
-    // Stop any previous polling
-    stopPolling();
+    setJob(pendingJob);
     setIsPolling(true);
 
     intervalRef.current = setInterval(async () => {
       try {
-        const updated = await fetchApi<JobStatus>(
+        const freshFetch = createClientFetch(getToken);
+        const updated = await freshFetch<JobStatus>(
           `/api/v1/analysis/jobs/${pendingJob.id}`
         );
         setJob(updated);
@@ -60,7 +62,6 @@ export function useJobPolling() {
           stopPolling();
         }
       } catch {
-        // If polling fails, stop and keep last known state
         stopPolling();
       }
     }, POLL_INTERVAL_MS);

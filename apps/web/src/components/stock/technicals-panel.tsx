@@ -40,7 +40,7 @@ export function TechnicalsPanel({ ticker }: TechnicalsPanelProps) {
 
   function maComparison(ma: number | null, label: string) {
     if (ma === null) return null;
-    const above = data!.current_price > ma;
+    const above = (data?.current_price ?? 0) > ma;
     return (
       <div className="flex items-center justify-between rounded-md border px-3 py-2">
         <span className="text-sm text-muted-foreground">{label}</span>

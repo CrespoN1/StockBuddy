@@ -82,7 +82,7 @@ export function NewsPanel({ ticker }: NewsPanelProps) {
                   {article.ticker_sentiment_label}
                 </Badge>
                 <span className="text-xs text-muted-foreground">
-                  Score: {article.ticker_sentiment_score.toFixed(3)}
+                  Score: {(article.ticker_sentiment_score ?? 0).toFixed(3)}
                 </span>
               </div>
             </div>

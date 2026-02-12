@@ -1,6 +1,7 @@
 import asyncio
 from datetime import datetime, timezone
 
+import structlog
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,6 +13,17 @@ from app.models import AnalysisJob, EarningsCall
 from app.schemas.analysis import JobStatus
 from app.schemas.earnings import EarningsAnalyzeRequest, EarningsCallRead
 from app.workers.tasks import run_earnings_analysis
+
+logger = structlog.stdlib.get_logger(__name__)
+
+
+def _log_task_exception(task: asyncio.Task) -> None:
+    if task.cancelled():
+        return
+    exc = task.exception()
+    if exc:
+        logger.error("Background task failed", error=str(exc), exc_info=exc)
+
 
 router = APIRouter(prefix="/stocks/{ticker}/earnings", tags=["earnings"])
 
@@ -62,10 +74,11 @@ async def analyze_earnings(
     await db.commit()
 
     # Run as inline background task (no separate worker needed)
-    asyncio.create_task(
+    task = asyncio.create_task(
         run_earnings_analysis(
             {}, str(job.id), user_id, ticker.upper(), body.transcript
         )
     )
+    task.add_done_callback(_log_task_exception)
 
     return job

@@ -170,7 +170,7 @@ export function ForecastPanel({ ticker }: ForecastPanelProps) {
             <div>
               <p className="text-xs text-muted-foreground">R-squared</p>
               <p className="text-sm font-medium">
-                {forecast.model_info.r_squared.toFixed(4)}
+                {(forecast.model_info?.r_squared ?? 0).toFixed(4)}
               </p>
             </div>
           </div>
@@ -195,14 +195,14 @@ export function ForecastPanel({ ticker }: ForecastPanelProps) {
               </thead>
               <tbody>
                 {/* Show every 7th day for readability */}
-                {forecast.forecast.dates
+                {(forecast.forecast?.dates ?? [])
                   .map((date, i) => ({
                     date,
-                    price: forecast.forecast.prices[i],
-                    low: forecast.forecast.lower_bound[i],
-                    high: forecast.forecast.upper_bound[i],
+                    price: forecast.forecast?.prices[i],
+                    low: forecast.forecast?.lower_bound[i],
+                    high: forecast.forecast?.upper_bound[i],
                   }))
-                  .filter((_, i) => i % 7 === 6 || i === forecast.forecast.dates.length - 1)
+                  .filter((_, i) => i % 7 === 6 || i === (forecast.forecast?.dates ?? []).length - 1)
                   .map((row) => (
                     <tr key={row.date} className="border-b last:border-0">
                       <td className="py-2 pr-4">{row.date}</td>
@@ -227,7 +227,7 @@ export function ForecastPanel({ ticker }: ForecastPanelProps) {
       <Card>
         <CardContent className="p-4">
           <p className="text-xs text-muted-foreground">
-            Model: {forecast.model_info.method} &middot; Training: {forecast.model_info.training_period} &middot; Trend: {forecast.model_info.slope_per_day > 0 ? "+" : ""}{forecast.model_info.slope_per_day.toFixed(4)}/day
+            Model: {forecast.model_info?.method ?? "N/A"} &middot; Training: {forecast.model_info?.training_period ?? "N/A"} &middot; Trend: {(forecast.model_info?.slope_per_day ?? 0) > 0 ? "+" : ""}{(forecast.model_info?.slope_per_day ?? 0).toFixed(4)}/day
           </p>
           <p className="mt-1 text-xs text-muted-foreground italic">
             Disclaimer: This forecast is for educational purposes only and should not be used as investment advice. Past performance does not guarantee future results.

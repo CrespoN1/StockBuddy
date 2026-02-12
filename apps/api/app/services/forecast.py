@@ -118,7 +118,7 @@ def _build_forecast_sync(ticker: str, forecast_days: int = 30) -> dict:
         # --- Summary statistics ---
         forecast_end_price = forecast_prices[-1]
         price_change = forecast_end_price - current_price
-        pct_change = (price_change / current_price) * 100
+        pct_change = (price_change / current_price) * 100 if current_price > 0 else 0.0
 
         if pct_change > 5:
             trend_signal = "Bullish"
