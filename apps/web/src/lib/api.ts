@@ -4,7 +4,9 @@
  * For server-side usage, import `apiFetch` from `@/lib/api.server` instead.
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// Client-side: use relative path so requests go through Vercel rewrites
+// (avoids CORS issues). The rewrite in next.config.ts proxies to the backend.
+const API_URL = "";
 
 type RequestOptions = Omit<RequestInit, "body"> & {
   body?: unknown;
