@@ -278,12 +278,15 @@ async def analyze_portfolio(
 
     concentration_risk = max(weights) if weights else 0.0
 
-    # Sentiment from earnings calls
+    # Sentiment from earnings calls (match by ticker or holding_id)
     sentiment_scores: list[float] = []
     for h in holdings:
         result = await db.execute(
             select(EarningsCall)
-            .where(EarningsCall.holding_id == h.id, EarningsCall.user_id == user_id)
+            .where(
+                EarningsCall.user_id == user_id,
+                (EarningsCall.ticker == h.ticker) | (EarningsCall.holding_id == h.id),
+            )
             .order_by(EarningsCall.created_at.desc())
             .limit(1)
         )
@@ -359,10 +362,13 @@ async def get_earnings_insights(
     )
 
     for h in holdings:
-        # Get latest earnings call for this holding
+        # Get latest earnings call for this holding (by ticker or holding_id)
         result = await db.execute(
             select(EarningsCall)
-            .where(EarningsCall.holding_id == h.id, EarningsCall.user_id == user_id)
+            .where(
+                EarningsCall.user_id == user_id,
+                (EarningsCall.ticker == h.ticker) | (EarningsCall.holding_id == h.id),
+            )
             .order_by(EarningsCall.created_at.desc())
             .limit(1)
         )

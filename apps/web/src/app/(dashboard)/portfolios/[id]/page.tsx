@@ -13,6 +13,7 @@ import { HoldingsTable } from "@/components/portfolio/holdings-table";
 import { AddHoldingForm } from "@/components/portfolio/add-holding-form";
 import { SectorChart } from "@/components/portfolio/sector-chart";
 import { PortfolioAnalysisPanel } from "@/components/portfolio/portfolio-analysis-panel";
+import { PortfolioNewsPanel } from "@/components/portfolio/portfolio-news-panel";
 import { usePortfolio, usePortfolioSnapshot, usePortfolioEarningsInsights } from "@/hooks/use-portfolios";
 import { formatCurrency, formatPercent } from "@/lib/format";
 
@@ -58,6 +59,7 @@ export default function PortfolioDetailPage() {
         <TabsList>
           <TabsTrigger value="holdings">Holdings</TabsTrigger>
           <TabsTrigger value="analysis">Analysis</TabsTrigger>
+          <TabsTrigger value="news">News & Sentiment</TabsTrigger>
           <TabsTrigger value="earnings">Earnings Insights</TabsTrigger>
         </TabsList>
 
@@ -132,6 +134,10 @@ export default function PortfolioDetailPage() {
           </Card>
 
           <PortfolioAnalysisPanel portfolioId={portfolioId} />
+        </TabsContent>
+
+        <TabsContent value="news">
+          <PortfolioNewsPanel portfolioId={portfolioId} />
         </TabsContent>
 
         <TabsContent value="earnings" className="space-y-4">

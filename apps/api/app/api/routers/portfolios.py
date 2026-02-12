@@ -14,7 +14,8 @@ from app.schemas.analysis import (
     PortfolioSnapshotRead,
     SectorAllocation,
 )
-from app.services import portfolio as portfolio_svc
+from app.schemas.stock import NewsArticle
+from app.services import news, portfolio as portfolio_svc
 
 router = APIRouter(prefix="/portfolios", tags=["portfolios"])
 
@@ -99,3 +100,35 @@ async def get_earnings_insights(
     user_id: str = Depends(get_current_user),
 ):
     return await portfolio_svc.get_earnings_insights(db, user_id, portfolio_id)
+
+
+@router.get("/{portfolio_id}/news", response_model=list[NewsArticle])
+async def get_portfolio_news(
+    portfolio_id: int,
+    db: AsyncSession = Depends(get_db),
+    user_id: str = Depends(get_current_user),
+):
+    """Get aggregated news for all holdings in a portfolio."""
+    portfolio = await portfolio_svc.get_portfolio(db, user_id, portfolio_id)
+    if portfolio is None:
+        raise HTTPException(404, "Portfolio not found")
+
+    holdings = await portfolio_svc.get_holdings(db, user_id, portfolio_id)
+    if not holdings:
+        return []
+
+    # Fetch 5 articles per holding, merge and sort by date
+    all_articles: list[dict] = []
+    for h in holdings[:10]:  # cap at 10 holdings to avoid rate limits
+        articles = await news.get_stock_news(h.ticker, limit=5)
+        all_articles.extend(articles)
+
+    # Sort by published_at descending and deduplicate by title
+    seen_titles: set[str] = set()
+    unique: list[dict] = []
+    for a in sorted(all_articles, key=lambda x: x.get("published_at", ""), reverse=True):
+        if a["title"] not in seen_titles:
+            seen_titles.add(a["title"])
+            unique.append(a)
+
+    return unique[:20]  # Return top 20 most recent

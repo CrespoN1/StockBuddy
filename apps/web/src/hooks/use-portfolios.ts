@@ -9,6 +9,7 @@ import type {
   PortfolioSnapshotRead,
   SectorAllocation,
   EarningsInsights,
+  NewsArticle,
 } from "@/types";
 
 function useApiFetch() {
@@ -57,6 +58,16 @@ export function usePortfolioEarningsInsights(id: number) {
     queryKey: ["portfolios", id, "earnings-insights"],
     queryFn: () => fetchApi<EarningsInsights>(`/api/v1/portfolios/${id}/earnings-insights`),
     enabled: id > 0,
+  });
+}
+
+export function usePortfolioNews(id: number) {
+  const fetchApi = useApiFetch();
+  return useQuery({
+    queryKey: ["portfolios", id, "news"],
+    queryFn: () => fetchApi<NewsArticle[]>(`/api/v1/portfolios/${id}/news`),
+    enabled: id > 0,
+    staleTime: 5 * 60 * 1000,
   });
 }
 
