@@ -186,7 +186,7 @@ async def _ensure_earnings_data(
 
         analysis_context = f"""
 Stock: {ticker}
-Current Price: ${price:.2f if price else 'N/A'}
+Current Price: {f'${price:.2f}' if price else 'N/A'}
 Sector: {fundamentals.get('sector', 'N/A')}
 Market Cap: {fundamentals.get('market_cap', 'N/A')}
 P/E Ratio: {fundamentals.get('pe_ratio', 'N/A')}
