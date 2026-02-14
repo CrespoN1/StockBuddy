@@ -20,6 +20,7 @@ class Holding(SQLModel, table=True):
 
     # Market data
     last_price: float | None = None
+    previous_close: float | None = None
     sector: str | None = None
     beta: float | None = None
     dividend_yield: float | None = None

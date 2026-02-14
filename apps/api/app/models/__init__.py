@@ -4,6 +4,7 @@ from .earnings import EarningsCall
 from .snapshot import PortfolioSnapshot
 from .analysis_job import AnalysisJob
 from .subscription import Subscription
+from .watchlist import WatchlistItem
 
 __all__ = [
     "Portfolio",
@@ -12,4 +13,5 @@ __all__ = [
     "PortfolioSnapshot",
     "AnalysisJob",
     "Subscription",
+    "WatchlistItem",
 ]

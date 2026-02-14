@@ -86,7 +86,14 @@ async def get_portfolio_snapshot(
     db: AsyncSession = Depends(get_db),
     user_id: str = Depends(get_current_user),
 ):
-    return await portfolio_svc.analyze_portfolio(db, user_id, portfolio_id)
+    snapshot = await portfolio_svc.analyze_portfolio(db, user_id, portfolio_id)
+    holdings = await portfolio_svc.get_holdings(db, user_id, portfolio_id)
+    daily_change, daily_change_pct = portfolio_svc.compute_daily_change(holdings)
+
+    result = PortfolioSnapshotRead.model_validate(snapshot)
+    result.daily_change = daily_change
+    result.daily_change_pct = daily_change_pct
+    return result
 
 
 @router.get("/{portfolio_id}/sectors", response_model=list[SectorAllocation])

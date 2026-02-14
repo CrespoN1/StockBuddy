@@ -9,6 +9,8 @@ export interface PortfolioSnapshotRead {
   risk_exposure_score: number | null;
   health_score: number | null;
   concentration_risk: number | null;
+  daily_change: number | null;
+  daily_change_pct: number | null;
 }
 
 export interface SectorAllocation {

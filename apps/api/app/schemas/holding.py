@@ -20,6 +20,7 @@ class HoldingRead(BaseModel):
     ticker: str
     shares: float
     last_price: float | None = None
+    previous_close: float | None = None
     sector: str | None = None
     beta: float | None = None
     dividend_yield: float | None = None

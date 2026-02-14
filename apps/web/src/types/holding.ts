@@ -4,6 +4,7 @@ export interface HoldingRead {
   ticker: string;
   shares: number;
   last_price: number | null;
+  previous_close: number | null;
   sector: string | null;
   beta: number | null;
   dividend_yield: number | null;

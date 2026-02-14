@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { GitCompareArrows, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,8 +16,10 @@ export default function ComparePage() {
   const { job, isPolling, startPolling } = useJobPolling();
   const compare = useCompare();
   const { data: usage } = useUsage();
+  const [selectedTickers, setSelectedTickers] = useState<string[]>([]);
 
   function handleCompare(tickers: string[]) {
+    setSelectedTickers(tickers);
     compare.mutate(tickers, {
       onSuccess: (pendingJob) => {
         startPolling(pendingJob);
@@ -79,7 +82,7 @@ export default function ComparePage() {
             </CardContent>
           </Card>
         ) : job ? (
-          <ComparisonResult job={job} />
+          <ComparisonResult job={job} tickers={selectedTickers} />
         ) : (
           <EmptyState
             icon={<GitCompareArrows className="h-12 w-12" />}

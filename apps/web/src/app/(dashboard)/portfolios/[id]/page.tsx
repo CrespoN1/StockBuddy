@@ -67,6 +67,7 @@ export default function PortfolioDetailPage() {
           <HoldingsTable
             holdings={portfolio.holdings}
             portfolioId={portfolioId}
+            portfolioName={portfolio.name}
           />
           <Card>
             <CardHeader>
@@ -89,6 +90,20 @@ export default function PortfolioDetailPage() {
                       ? formatCurrency(snapshot.total_value)
                       : "--"}
                   </p>
+                  {snapshot.daily_change != null && (
+                    <p
+                      className={`text-xs font-medium ${
+                        snapshot.daily_change >= 0
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      {snapshot.daily_change >= 0 ? "+" : ""}
+                      {formatCurrency(snapshot.daily_change)}
+                      {snapshot.daily_change_pct != null &&
+                        ` (${snapshot.daily_change_pct >= 0 ? "+" : ""}${snapshot.daily_change_pct.toFixed(2)}%)`}
+                    </p>
+                  )}
                 </CardContent>
               </Card>
               <Card>

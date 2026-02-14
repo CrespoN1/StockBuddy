@@ -46,6 +46,7 @@ async def get_stock_fundamentals(ticker: str) -> dict:
     result: dict = {
         "price": None,
         "currency": "USD",
+        "name": None,
         "sector": None,
         "beta": None,
         "dividend_yield": None,
@@ -68,6 +69,7 @@ async def get_stock_fundamentals(ticker: str) -> dict:
             data = overview_resp.json()
             if _check_rate_limit(data):
                 return result
+            result["name"] = data.get("Name") or None
             result["sector"] = data.get("Sector") or None
             result["market_cap"] = data.get("MarketCapitalization") or None
             result["pe_ratio"] = data.get("PERatio") or None
@@ -83,10 +85,24 @@ async def get_stock_fundamentals(ticker: str) -> dict:
     return result
 
 
+def _safe_float(val: object) -> float | None:
+    """Convert a value to float, returning None on failure."""
+    if val is None or val == "" or val == "None":
+        return None
+    try:
+        return float(val)  # type: ignore[arg-type]
+    except (ValueError, TypeError):
+        return None
+
+
 @retry(stop=stop_after_attempt(2), wait=wait_exponential(min=2, max=10))
-async def get_latest_price(ticker: str) -> float | None:
-    """Fetch the latest price via GLOBAL_QUOTE."""
+async def get_quote(ticker: str) -> dict:
+    """Fetch price and previous close via GLOBAL_QUOTE.
+
+    Returns {"price": float|None, "previous_close": float|None}.
+    """
     _require_api_key()
+    result = {"price": None, "previous_close": None}
 
     async with httpx.AsyncClient(timeout=10.0) as client:
         resp = await client.get(
@@ -100,10 +116,15 @@ async def get_latest_price(ticker: str) -> float | None:
         if resp.status_code == 200:
             data = resp.json()
             if _check_rate_limit(data):
-                return None
-            try:
-                return float(data["Global Quote"]["05. price"])
-            except (KeyError, ValueError, TypeError):
-                logger.warning("Could not parse price for %s", ticker)
-                return None
-    return None
+                return result
+            gq = data.get("Global Quote", {})
+            result["price"] = _safe_float(gq.get("05. price"))
+            result["previous_close"] = _safe_float(gq.get("08. previous close"))
+    return result
+
+
+@retry(stop=stop_after_attempt(2), wait=wait_exponential(min=2, max=10))
+async def get_latest_price(ticker: str) -> float | None:
+    """Fetch the latest price via GLOBAL_QUOTE."""
+    quote = await get_quote(ticker)
+    return quote["price"]

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Pencil, RefreshCw, Trash2 } from "lucide-react";
+import { Download, Pencil, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   Table,
@@ -24,15 +24,17 @@ import {
 } from "@/components/ui/dialog";
 import { useUpdateHolding, useDeleteHolding, useRefreshHoldings } from "@/hooks/use-holdings";
 import { formatCurrency, formatNumber } from "@/lib/format";
+import { exportHoldingsCSV } from "@/lib/csv-export";
 import type { HoldingRead } from "@/types";
 import { holdingValue } from "@/types";
 
 interface HoldingsTableProps {
   holdings: HoldingRead[];
   portfolioId: number;
+  portfolioName?: string;
 }
 
-export function HoldingsTable({ holdings, portfolioId }: HoldingsTableProps) {
+export function HoldingsTable({ holdings, portfolioId, portfolioName }: HoldingsTableProps) {
   const [editingHolding, setEditingHolding] = useState<HoldingRead | null>(null);
   const [editShares, setEditShares] = useState("");
   const updateHolding = useUpdateHolding(portfolioId);
@@ -80,7 +82,15 @@ export function HoldingsTable({ holdings, portfolioId }: HoldingsTableProps) {
 
   return (
     <>
-      <div className="flex justify-end mb-2">
+      <div className="flex justify-end gap-2 mb-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => exportHoldingsCSV(holdings, portfolioName ?? "portfolio")}
+        >
+          <Download className="h-3.5 w-3.5 mr-1.5" />
+          Export CSV
+        </Button>
         <Button
           variant="outline"
           size="sm"

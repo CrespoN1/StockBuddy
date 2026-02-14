@@ -34,6 +34,10 @@ export default function DashboardPage() {
     .filter((s): s is PortfolioSnapshotRead => !!s);
 
   const totalValue = snapshots.reduce((sum, s) => sum + (s.total_value ?? 0), 0);
+  const totalDailyChange = snapshots.reduce((sum, s) => sum + (s.daily_change ?? 0), 0);
+  const hasDailyChange = snapshots.some((s) => s.daily_change != null);
+  const totalPrevValue = totalValue - totalDailyChange;
+  const totalDailyChangePct = totalPrevValue > 0 ? (totalDailyChange / totalPrevValue) * 100 : null;
   const totalPositions = snapshots.reduce((sum, s) => sum + s.num_positions, 0);
   const avgHealthScore =
     snapshots.length > 0
@@ -147,6 +151,18 @@ export default function DashboardPage() {
                 <Skeleton className="mt-2 h-8 w-20" />
               ) : (
                 <p className="mt-1 text-2xl font-semibold">{stat.value}</p>
+              )}
+              {stat.label === "Total Portfolio Value" && !snapshotsLoading && hasDailyChange && (
+                <p
+                  className={`text-xs font-medium ${
+                    totalDailyChange >= 0 ? "text-green-600" : "text-red-600"
+                  }`}
+                >
+                  {totalDailyChange >= 0 ? "+" : ""}
+                  {formatCurrency(totalDailyChange)}
+                  {totalDailyChangePct != null &&
+                    ` (${totalDailyChangePct >= 0 ? "+" : ""}${totalDailyChangePct.toFixed(2)}%)`}
+                </p>
               )}
             </CardContent>
           </Card>

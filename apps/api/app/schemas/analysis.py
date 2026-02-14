@@ -16,6 +16,8 @@ class PortfolioSnapshotRead(BaseModel):
     risk_exposure_score: float | None = None
     health_score: int | None = None
     concentration_risk: float | None = None
+    daily_change: float | None = None
+    daily_change_pct: float | None = None
 
 
 class SectorAllocation(BaseModel):

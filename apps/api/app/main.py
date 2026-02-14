@@ -13,7 +13,7 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 from starlette.requests import Request as StarletteRequest
 from starlette.responses import Response
 
-from app.api.routers import analysis, billing, earnings, holdings, portfolios, stocks
+from app.api.routers import analysis, billing, earnings, holdings, portfolios, stocks, watchlist
 from app.config import settings
 from app.core.exceptions import register_exception_handlers
 from app.core.logging import setup_logging

@@ -90,9 +90,12 @@ async def add_holding(
     beta: float | None = 1.0
     dividend_yield: float | None = None
 
+    previous_close: float | None = None
+
     try:
-        price = await market_data.get_latest_price(ticker)
-        last_price = price or 0.0
+        quote = await market_data.get_quote(ticker)
+        last_price = quote["price"] or 0.0
+        previous_close = quote["previous_close"]
     except Exception as exc:
         logger.warning("Price fetch failed for %s: %s", ticker, exc)
 
@@ -112,6 +115,7 @@ async def add_holding(
         ticker=ticker,
         shares=shares,
         last_price=last_price,
+        previous_close=previous_close,
         sector=sector,
         beta=beta,
         dividend_yield=dividend_yield,
@@ -139,11 +143,13 @@ async def refresh_holdings(
         if i > 0:
             await asyncio.sleep(1.5)
         try:
-            price = await market_data.get_latest_price(h.ticker)
-            if price is not None:
-                h.last_price = price
-                h.updated_at = datetime.now(timezone.utc)
-                db.add(h)
+            quote = await market_data.get_quote(h.ticker)
+            if quote["price"] is not None:
+                h.last_price = quote["price"]
+            if quote["previous_close"] is not None:
+                h.previous_close = quote["previous_close"]
+            h.updated_at = datetime.now(timezone.utc)
+            db.add(h)
         except Exception as exc:
             logger.warning("Price refresh failed for %s: %s", h.ticker, exc)
 
@@ -200,6 +206,25 @@ async def delete_holding(
     await db.delete(holding)
     await db.flush()
     return True
+
+
+def compute_daily_change(
+    holdings: list[Holding],
+) -> tuple[float, float | None]:
+    """Compute aggregate daily change across holdings.
+
+    Returns (daily_change_dollars, daily_change_pct).
+    Only includes holdings where both last_price and previous_close are set.
+    """
+    daily_change = 0.0
+    prev_total = 0.0
+    for h in holdings:
+        if h.last_price is not None and h.previous_close is not None:
+            daily_change += (h.last_price - h.previous_close) * h.shares
+            prev_total += h.previous_close * h.shares
+
+    pct = (daily_change / prev_total * 100) if prev_total > 0 else None
+    return daily_change, pct
 
 
 # ─── Analysis (ported from portfolio_analyzer.py) ─────────────────────

@@ -27,6 +27,7 @@ from .subscription import (
     CheckoutSessionResponse,
     BillingPortalResponse,
 )
+from .watchlist import WatchlistItemCreate, WatchlistItemRead
 
 __all__ = [
     "PortfolioCreate",
@@ -53,4 +54,6 @@ __all__ = [
     "UsageInfo",
     "CheckoutSessionResponse",
     "BillingPortalResponse",
+    "WatchlistItemCreate",
+    "WatchlistItemRead",
 ]

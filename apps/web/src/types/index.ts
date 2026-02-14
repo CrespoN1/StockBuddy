@@ -19,3 +19,4 @@ export type {
   JobStatus,
 } from "./analysis";
 export type { SubscriptionRead, UsageInfo, CheckoutSessionResponse, BillingPortalResponse } from "./subscription";
+export type { WatchlistItem, WatchlistItemCreate } from "./watchlist";
