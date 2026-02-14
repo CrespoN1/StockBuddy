@@ -153,6 +153,19 @@ async def refresh_holdings(
         except Exception as exc:
             logger.warning("Price refresh failed for %s: %s", h.ticker, exc)
 
+        # Fetch sector/beta if missing
+        if h.sector is None or h.sector == "Unknown":
+            await asyncio.sleep(1.5)
+            try:
+                fundamentals = await market_data.get_stock_fundamentals(h.ticker)
+                if fundamentals.get("sector"):
+                    h.sector = fundamentals["sector"]
+                if fundamentals.get("beta") is not None:
+                    h.beta = fundamentals["beta"]
+                db.add(h)
+            except Exception as exc:
+                logger.warning("Fundamentals refresh failed for %s: %s", h.ticker, exc)
+
     await db.flush()
     for h in holdings:
         await db.refresh(h)

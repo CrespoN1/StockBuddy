@@ -90,9 +90,7 @@ export default function StockDetailPage() {
             ) : (
               <Skeleton className="h-7 w-20" />
             )}
-            {quote?.currency && (
-              <Badge variant="secondary">{quote.currency}</Badge>
-            )}
+            <Badge variant="secondary">USD</Badge>
           </div>
         </div>
       </div>
