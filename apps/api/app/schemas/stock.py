@@ -105,6 +105,19 @@ class ForecastModelInfo(BaseModel):
     r_squared: float
 
 
+class RedditPost(BaseModel):
+    title: str
+    selftext_preview: str = ""
+    score: int = 0
+    subreddit: str
+    url: str
+    created_utc: float = 0.0
+    num_comments: int = 0
+    author: str = "[deleted]"
+    flair: str = ""
+    ticker: str
+
+
 class StockForecast(BaseModel):
     ticker: str
     current_price: float

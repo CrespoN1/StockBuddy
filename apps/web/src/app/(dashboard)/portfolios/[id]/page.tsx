@@ -15,6 +15,7 @@ import { SectorChart } from "@/components/portfolio/sector-chart";
 import { PortfolioHistoryChart } from "@/components/portfolio/portfolio-history-chart";
 import { PortfolioAnalysisPanel } from "@/components/portfolio/portfolio-analysis-panel";
 import { PortfolioNewsPanel } from "@/components/portfolio/portfolio-news-panel";
+import { PortfolioRedditPanel } from "@/components/portfolio/portfolio-reddit-panel";
 import { usePortfolio, usePortfolioSnapshot, usePortfolioEarningsInsights } from "@/hooks/use-portfolios";
 import { formatCurrency, formatPercent } from "@/lib/format";
 
@@ -62,6 +63,7 @@ export default function PortfolioDetailPage() {
           <TabsTrigger value="analysis">Analysis</TabsTrigger>
           <TabsTrigger value="news">News & Sentiment</TabsTrigger>
           <TabsTrigger value="earnings">Earnings Insights</TabsTrigger>
+          <TabsTrigger value="reddit">Social Media</TabsTrigger>
         </TabsList>
 
         <TabsContent value="holdings" className="space-y-6">
@@ -242,6 +244,10 @@ export default function PortfolioDetailPage() {
           ) : (
             <Skeleton className="h-48 w-full" />
           )}
+        </TabsContent>
+
+        <TabsContent value="reddit">
+          <PortfolioRedditPanel portfolioId={portfolioId} />
         </TabsContent>
       </Tabs>
     </div>

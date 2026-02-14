@@ -83,6 +83,19 @@ export interface NewsArticle {
   ticker_relevance: number;
 }
 
+export interface RedditPost {
+  title: string;
+  selftext_preview: string;
+  score: number;
+  subreddit: string;
+  url: string;
+  created_utc: number;
+  num_comments: number;
+  author: string;
+  flair: string;
+  ticker: string;
+}
+
 export interface StockForecast {
   ticker: string;
   current_price: number;

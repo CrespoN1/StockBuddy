@@ -1,3 +1,5 @@
+import asyncio
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,8 +18,8 @@ from app.schemas.analysis import (
     SectorAllocation,
 )
 from app.schemas.holding import HoldingRead
-from app.schemas.stock import NewsArticle
-from app.services import news, portfolio as portfolio_svc
+from app.schemas.stock import NewsArticle, RedditPost
+from app.services import news, reddit, portfolio as portfolio_svc
 from app.services import subscription as sub_svc
 
 router = APIRouter(prefix="/portfolios", tags=["portfolios"])
@@ -174,3 +176,30 @@ async def get_portfolio_news(
             unique.append(a)
 
     return unique[:20]  # Return top 20 most recent
+
+
+@router.get("/{portfolio_id}/reddit", response_model=list[RedditPost])
+async def get_portfolio_reddit(
+    portfolio_id: int,
+    db: AsyncSession = Depends(get_db),
+    user_id: str = Depends(get_current_user),
+):
+    """Get aggregated Reddit posts for all holdings in a portfolio."""
+    portfolio = await portfolio_svc.get_portfolio(db, user_id, portfolio_id)
+    if portfolio is None:
+        raise HTTPException(404, "Portfolio not found")
+
+    holdings = await portfolio_svc.get_holdings(db, user_id, portfolio_id)
+    if not holdings:
+        return []
+
+    all_posts: list[dict] = []
+    for h in holdings[:10]:  # cap at 10 holdings to respect rate limits
+        posts = await reddit.get_reddit_posts(h.ticker, limit=5)
+        all_posts.extend(posts)
+        await asyncio.sleep(0.5)  # rate limit courtesy delay
+
+    # Sort by created_utc descending (most recent first)
+    all_posts.sort(key=lambda x: x.get("created_utc", 0), reverse=True)
+
+    return all_posts[:50]

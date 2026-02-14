@@ -10,6 +10,7 @@ import type {
   SectorAllocation,
   EarningsInsights,
   NewsArticle,
+  RedditPost,
   HoldingRead,
   DashboardSummary,
 } from "@/types";
@@ -82,6 +83,16 @@ export function usePortfolioNews(id: number) {
     queryFn: () => fetchApi<NewsArticle[]>(`/api/v1/portfolios/${id}/news`),
     enabled: id > 0,
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function usePortfolioReddit(id: number) {
+  const fetchApi = useApiFetch();
+  return useQuery({
+    queryKey: ["portfolios", id, "reddit"],
+    queryFn: () => fetchApi<RedditPost[]>(`/api/v1/portfolios/${id}/reddit`),
+    enabled: id > 0,
+    staleTime: 10 * 60 * 1000, // 10 minutes — longer cache to respect Reddit rate limits
   });
 }
 

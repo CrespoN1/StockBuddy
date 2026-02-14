@@ -9,6 +9,7 @@ export type {
   OHLCVBar,
   TechnicalIndicators,
   NewsArticle,
+  RedditPost,
   StockForecast,
 } from "./stock";
 export type { EarningsCallRead } from "./earnings";
