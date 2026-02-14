@@ -79,11 +79,11 @@ class NewsArticle(BaseModel):
     published_at: str
     summary: str
     banner_image: str = ""
-    overall_sentiment_score: float = 0.0
+    overall_sentiment_score: float | None = 0.0
     overall_sentiment_label: str = ""
-    ticker_sentiment_score: float = 0.0
+    ticker_sentiment_score: float | None = 0.0
     ticker_sentiment_label: str = "Neutral"
-    ticker_relevance: float = 0.0
+    ticker_relevance: float | None = 0.0
 
 
 class ForecastHistorical(BaseModel):
