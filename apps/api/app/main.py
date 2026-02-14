@@ -13,7 +13,7 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 from starlette.requests import Request as StarletteRequest
 from starlette.responses import Response
 
-from app.api.routers import analysis, billing, earnings, holdings, portfolios, stocks, watchlist
+from app.api.routers import alerts, analysis, billing, earnings, holdings, portfolios, stocks, watchlist
 from app.config import settings
 from app.core.exceptions import register_exception_handlers
 from app.core.logging import setup_logging
@@ -113,6 +113,7 @@ app.include_router(earnings.router, prefix=API_PREFIX)
 app.include_router(analysis.router, prefix=API_PREFIX)
 app.include_router(billing.router, prefix=API_PREFIX)
 app.include_router(watchlist.router, prefix=API_PREFIX)
+app.include_router(alerts.router, prefix=API_PREFIX)
 
 
 @app.get("/health")

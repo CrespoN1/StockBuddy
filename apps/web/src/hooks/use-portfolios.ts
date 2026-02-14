@@ -10,6 +10,8 @@ import type {
   SectorAllocation,
   EarningsInsights,
   NewsArticle,
+  HoldingRead,
+  DashboardSummary,
 } from "@/types";
 
 function useApiFetch() {
@@ -30,6 +32,18 @@ export function usePortfolio(id: number) {
   return useQuery({
     queryKey: ["portfolios", id],
     queryFn: () => fetchApi<PortfolioDetail>(`/api/v1/portfolios/${id}`),
+    enabled: id > 0,
+  });
+}
+
+export function usePortfolioHistory(id: number, days = 90) {
+  const fetchApi = useApiFetch();
+  return useQuery({
+    queryKey: ["portfolios", id, "history", days],
+    queryFn: () =>
+      fetchApi<PortfolioSnapshotRead[]>(
+        `/api/v1/portfolios/${id}/history?days=${days}`
+      ),
     enabled: id > 0,
   });
 }
@@ -68,6 +82,24 @@ export function usePortfolioNews(id: number) {
     queryFn: () => fetchApi<NewsArticle[]>(`/api/v1/portfolios/${id}/news`),
     enabled: id > 0,
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useEarningsCalendar() {
+  const fetchApi = useApiFetch();
+  return useQuery({
+    queryKey: ["earnings-calendar"],
+    queryFn: () =>
+      fetchApi<HoldingRead[]>("/api/v1/portfolios/earnings-calendar"),
+  });
+}
+
+export function useDashboardSummary() {
+  const fetchApi = useApiFetch();
+  return useQuery({
+    queryKey: ["dashboard-summary"],
+    queryFn: () =>
+      fetchApi<DashboardSummary>("/api/v1/portfolios/dashboard-summary"),
   });
 }
 

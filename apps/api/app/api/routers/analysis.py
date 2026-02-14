@@ -109,6 +109,27 @@ async def compare_earnings(
     return job
 
 
+# ─── Past comparisons ────────────────────────────────────────────────
+
+@router.get("/comparisons", response_model=list[JobStatus])
+async def list_comparisons(
+    db: AsyncSession = Depends(get_db),
+    user_id: str = Depends(get_current_user),
+):
+    """List completed comparison jobs for the current user."""
+    result = await db.execute(
+        select(AnalysisJob)
+        .where(
+            AnalysisJob.user_id == user_id,
+            AnalysisJob.job_type == "comparison",
+            AnalysisJob.status == "completed",
+        )
+        .order_by(AnalysisJob.completed_at.desc())
+        .limit(20)
+    )
+    return list(result.scalars().all())
+
+
 # ─── Job status polling ───────────────────────────────────────────────
 
 @router.get("/jobs/{job_id}", response_model=JobStatus)

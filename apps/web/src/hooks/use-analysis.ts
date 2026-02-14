@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
 import { createClientFetch } from "@/lib/api";
 import type { JobStatus } from "@/types";
@@ -33,5 +33,13 @@ export function useCompare() {
         method: "POST",
         body: { tickers },
       }),
+  });
+}
+
+export function usePastComparisons() {
+  const fetchApi = useApiFetch();
+  return useQuery({
+    queryKey: ["comparisons"],
+    queryFn: () => fetchApi<JobStatus[]>("/api/v1/analysis/comparisons"),
   });
 }

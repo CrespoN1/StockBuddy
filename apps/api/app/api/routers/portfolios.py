@@ -10,10 +10,12 @@ from app.schemas.portfolio import (
     PortfolioUpdate,
 )
 from app.schemas.analysis import (
+    DashboardSummary,
     EarningsInsights,
     PortfolioSnapshotRead,
     SectorAllocation,
 )
+from app.schemas.holding import HoldingRead
 from app.schemas.stock import NewsArticle
 from app.services import news, portfolio as portfolio_svc
 from app.services import subscription as sub_svc
@@ -40,6 +42,24 @@ async def create_portfolio(
             403, "Free plan allows only 1 portfolio. Upgrade to Pro for unlimited."
         )
     return await portfolio_svc.create_portfolio(db, user_id, body.name)
+
+
+@router.get("/earnings-calendar", response_model=list[HoldingRead])
+async def get_earnings_calendar(
+    db: AsyncSession = Depends(get_db),
+    user_id: str = Depends(get_current_user),
+):
+    """Return all holdings with upcoming earnings dates."""
+    return await portfolio_svc.get_earnings_calendar(db, user_id)
+
+
+@router.get("/dashboard-summary", response_model=DashboardSummary)
+async def get_dashboard_summary(
+    db: AsyncSession = Depends(get_db),
+    user_id: str = Depends(get_current_user),
+):
+    """Compute dashboard summary: best/worst performer + upcoming earnings."""
+    return await portfolio_svc.get_dashboard_summary(db, user_id)
 
 
 @router.get("/{portfolio_id}", response_model=PortfolioDetail)
@@ -79,6 +99,16 @@ async def delete_portfolio(
 
 
 # ─── Analysis endpoints under /portfolios/{id}/ ──────────────────────
+
+@router.get("/{portfolio_id}/history", response_model=list[PortfolioSnapshotRead])
+async def get_portfolio_history(
+    portfolio_id: int,
+    days: int = 90,
+    db: AsyncSession = Depends(get_db),
+    user_id: str = Depends(get_current_user),
+):
+    return await portfolio_svc.get_snapshot_history(db, user_id, portfolio_id, days)
+
 
 @router.get("/{portfolio_id}/snapshot", response_model=PortfolioSnapshotRead)
 async def get_portfolio_snapshot(

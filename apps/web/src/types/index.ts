@@ -17,6 +17,9 @@ export type {
   SectorAllocation,
   EarningsInsights,
   JobStatus,
+  PerformerInfo,
+  DashboardSummary,
 } from "./analysis";
 export type { SubscriptionRead, UsageInfo, CheckoutSessionResponse, BillingPortalResponse } from "./subscription";
 export type { WatchlistItem, WatchlistItemCreate } from "./watchlist";
+export type { PriceAlert, PriceAlertCreate, AlertsSummary } from "./price-alert";

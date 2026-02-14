@@ -24,6 +24,7 @@ class HoldingRead(BaseModel):
     sector: str | None = None
     beta: float | None = None
     dividend_yield: float | None = None
+    next_earnings_date: str | None = None
     latest_earnings_call: datetime | None = None
     earnings_call_summary: str | None = None
     created_at: datetime

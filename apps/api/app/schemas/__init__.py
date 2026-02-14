@@ -28,6 +28,7 @@ from .subscription import (
     BillingPortalResponse,
 )
 from .watchlist import WatchlistItemCreate, WatchlistItemRead
+from .price_alert import PriceAlertCreate, PriceAlertRead, AlertsSummary
 
 __all__ = [
     "PortfolioCreate",
@@ -56,4 +57,7 @@ __all__ = [
     "BillingPortalResponse",
     "WatchlistItemCreate",
     "WatchlistItemRead",
+    "PriceAlertCreate",
+    "PriceAlertRead",
+    "AlertsSummary",
 ]

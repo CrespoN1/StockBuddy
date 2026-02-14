@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Bell } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -91,6 +91,12 @@ export default function StockDetailPage() {
               <Skeleton className="h-7 w-20" />
             )}
             <Badge variant="secondary">USD</Badge>
+            <Button variant="outline" size="sm" asChild className="ml-2">
+              <Link href={`/alerts?ticker=${ticker.toUpperCase()}`}>
+                <Bell className="mr-1 h-3 w-3" />
+                Set Alert
+              </Link>
+            </Button>
           </div>
         </div>
       </div>

@@ -8,6 +8,7 @@ export interface HoldingRead {
   sector: string | null;
   beta: number | null;
   dividend_yield: number | null;
+  next_earnings_date: string | null;
   latest_earnings_call: string | null;
   earnings_call_summary: string | null;
   created_at: string;

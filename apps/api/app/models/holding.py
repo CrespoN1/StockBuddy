@@ -25,6 +25,9 @@ class Holding(SQLModel, table=True):
     beta: float | None = None
     dividend_yield: float | None = None
 
+    # Upcoming earnings
+    next_earnings_date: str | None = None
+
     # Earnings tracking
     latest_earnings_call: datetime | None = Field(
         default=None, sa_type=sa.DateTime(timezone=True)

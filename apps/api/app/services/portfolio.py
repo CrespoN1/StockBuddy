@@ -8,15 +8,15 @@ Changes: in-memory state → DB-backed via SQLModel, all queries scoped by user_
 
 import asyncio
 import structlog
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models import EarningsCall, Holding, Portfolio, PortfolioSnapshot
-from app.schemas.analysis import EarningsInsights, SectorAllocation
-from app.services import market_data
+from app.schemas.analysis import DashboardSummary, EarningsInsights, PerformerInfo, SectorAllocation
+from app.services import market_data, price_alerts
 
 logger = structlog.stdlib.get_logger(__name__)
 
@@ -89,6 +89,7 @@ async def add_holding(
     sector: str | None = "Unknown"
     beta: float | None = 1.0
     dividend_yield: float | None = None
+    next_earnings_date: str | None = None
 
     previous_close: float | None = None
 
@@ -106,6 +107,7 @@ async def add_holding(
         sector = fundamentals.get("sector") or "Unknown"
         beta = fundamentals.get("beta") or 1.0
         dividend_yield = fundamentals.get("dividend_yield")
+        next_earnings_date = fundamentals.get("next_earnings_date")
     except Exception as exc:
         logger.warning("Fundamentals fetch failed for %s: %s", ticker, exc)
 
@@ -119,6 +121,7 @@ async def add_holding(
         sector=sector,
         beta=beta,
         dividend_yield=dividend_yield,
+        next_earnings_date=next_earnings_date,
     )
     db.add(holding)
     await db.flush()
@@ -146,6 +149,8 @@ async def refresh_holdings(
             quote = await market_data.get_quote(h.ticker)
             if quote["price"] is not None:
                 h.last_price = quote["price"]
+                # Check price alerts for this ticker
+                await price_alerts.check_alerts_for_ticker(db, h.ticker, quote["price"])
             if quote["previous_close"] is not None:
                 h.previous_close = quote["previous_close"]
             h.updated_at = datetime.now(timezone.utc)
@@ -153,8 +158,8 @@ async def refresh_holdings(
         except Exception as exc:
             logger.warning("Price refresh failed for %s: %s", h.ticker, exc)
 
-        # Fetch sector/beta if missing
-        if h.sector is None or h.sector == "Unknown":
+        # Fetch sector/beta/next_earnings_date if missing
+        if h.sector is None or h.sector == "Unknown" or h.next_earnings_date is None:
             await asyncio.sleep(1.5)
             try:
                 fundamentals = await market_data.get_stock_fundamentals(h.ticker)
@@ -162,6 +167,8 @@ async def refresh_holdings(
                     h.sector = fundamentals["sector"]
                 if fundamentals.get("beta") is not None:
                     h.beta = fundamentals["beta"]
+                if fundamentals.get("next_earnings_date"):
+                    h.next_earnings_date = fundamentals["next_earnings_date"]
                 db.add(h)
             except Exception as exc:
                 logger.warning("Fundamentals refresh failed for %s: %s", h.ticker, exc)
@@ -385,6 +392,23 @@ async def get_sector_allocation(
     ]
 
 
+async def get_snapshot_history(
+    db: AsyncSession, user_id: str, portfolio_id: int, days: int = 90
+) -> list[PortfolioSnapshot]:
+    """Return snapshots within the last `days` days, ordered by date ascending."""
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    result = await db.execute(
+        select(PortfolioSnapshot)
+        .where(
+            PortfolioSnapshot.user_id == user_id,
+            PortfolioSnapshot.portfolio_id == portfolio_id,
+            PortfolioSnapshot.created_at >= cutoff,
+        )
+        .order_by(PortfolioSnapshot.created_at.asc())
+    )
+    return list(result.scalars().all())
+
+
 async def get_earnings_insights(
     db: AsyncSession, user_id: str, portfolio_id: int
 ) -> EarningsInsights:
@@ -428,3 +452,57 @@ async def get_earnings_insights(
             insights.sentiment_summary["no_data"] += 1
 
     return insights
+
+
+async def get_earnings_calendar(db: AsyncSession, user_id: str) -> list[Holding]:
+    """Return all holdings with a next_earnings_date, sorted ascending."""
+    result = await db.execute(
+        select(Holding)
+        .where(
+            Holding.user_id == user_id,
+            Holding.next_earnings_date.isnot(None),
+            Holding.next_earnings_date != "",
+        )
+        .order_by(Holding.next_earnings_date.asc())
+    )
+    return list(result.scalars().all())
+
+
+async def get_dashboard_summary(db: AsyncSession, user_id: str) -> DashboardSummary:
+    """Compute dashboard summary: best/worst daily performer + upcoming earnings."""
+    result = await db.execute(
+        select(Holding).where(Holding.user_id == user_id)
+    )
+    all_holdings = list(result.scalars().all())
+
+    best: PerformerInfo | None = None
+    worst: PerformerInfo | None = None
+
+    for h in all_holdings:
+        if h.last_price is not None and h.previous_close is not None and h.previous_close > 0:
+            pct = ((h.last_price - h.previous_close) / h.previous_close) * 100
+            info = PerformerInfo(ticker=h.ticker, daily_change_pct=round(pct, 2))
+            if best is None or pct > best.daily_change_pct:
+                best = info
+            if worst is None or pct < worst.daily_change_pct:
+                worst = info
+
+    # Upcoming earnings within next 14 days
+    now = datetime.now(timezone.utc).date()
+    cutoff = now + timedelta(days=14)
+    upcoming_tickers: list[str] = []
+    for h in all_holdings:
+        if h.next_earnings_date:
+            try:
+                ed = datetime.strptime(h.next_earnings_date, "%Y-%m-%d").date()
+                if now <= ed <= cutoff:
+                    upcoming_tickers.append(h.ticker)
+            except ValueError:
+                pass
+
+    return DashboardSummary(
+        best_performer=best,
+        worst_performer=worst,
+        upcoming_earnings_count=len(upcoming_tickers),
+        upcoming_earnings_tickers=upcoming_tickers,
+    )

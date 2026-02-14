@@ -3,13 +3,13 @@
 import Link from "next/link";
 import { useQueries } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
-import { Briefcase, DollarSign, Heart, BarChart3, Plus } from "lucide-react";
+import { Briefcase, DollarSign, Heart, BarChart3, Plus, TrendingUp, TrendingDown, CalendarDays } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
-import { usePortfolios } from "@/hooks/use-portfolios";
+import { usePortfolios, useDashboardSummary } from "@/hooks/use-portfolios";
 import { createClientFetch } from "@/lib/api";
 import { formatCurrency, formatPercent, formatDate } from "@/lib/format";
 import type { PortfolioSnapshotRead } from "@/types";
@@ -17,6 +17,7 @@ import type { PortfolioSnapshotRead } from "@/types";
 export default function DashboardPage() {
   const { getToken } = useAuth();
   const { data: portfolios, isPending, isError, error, refetch } = usePortfolios();
+  const { data: summary } = useDashboardSummary();
 
   const fetchApi = createClientFetch(getToken);
   const snapshotQueries = useQueries({
@@ -56,8 +57,8 @@ export default function DashboardPage() {
     return (
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Dashboard</h2>
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
             <Card key={i}>
               <CardContent className="p-6">
                 <Skeleton className="h-4 w-24" />
@@ -104,6 +105,9 @@ export default function DashboardPage() {
     );
   }
 
+  const bestPerformer = summary?.best_performer;
+  const worstPerformer = summary?.worst_performer;
+
   const stats = [
     {
       label: "Total Portfolio Value",
@@ -130,6 +134,22 @@ export default function DashboardPage() {
             : "--",
       icon: BarChart3,
     },
+    {
+      label: "Top Performer",
+      value: bestPerformer
+        ? `${bestPerformer.ticker} ${bestPerformer.daily_change_pct >= 0 ? "+" : ""}${bestPerformer.daily_change_pct.toFixed(2)}%`
+        : "--",
+      icon: TrendingUp,
+    },
+    {
+      label: "Upcoming Earnings",
+      value: summary
+        ? summary.upcoming_earnings_count > 0
+          ? `${summary.upcoming_earnings_count} (${summary.upcoming_earnings_tickers.slice(0, 3).join(", ")})`
+          : "None in 14 days"
+        : null,
+      icon: CalendarDays,
+    },
   ];
 
   return (
@@ -139,7 +159,7 @@ export default function DashboardPage() {
         Overview of your portfolio performance and earnings insights.
       </p>
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {stats.map((stat) => (
           <Card key={stat.label}>
             <CardContent className="p-6">

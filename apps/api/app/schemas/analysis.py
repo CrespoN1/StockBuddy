@@ -40,6 +40,7 @@ class JobStatus(BaseModel):
     id: str
     job_type: str
     status: str  # pending, processing, completed, failed
+    input_data: dict | None = None
     result: dict | None = None
     error: str | None = None
     created_at: datetime
@@ -49,3 +50,15 @@ class JobStatus(BaseModel):
 
 class CompareRequest(BaseModel):
     tickers: list[str] = Field(..., min_length=2, max_length=5)
+
+
+class PerformerInfo(BaseModel):
+    ticker: str
+    daily_change_pct: float
+
+
+class DashboardSummary(BaseModel):
+    best_performer: PerformerInfo | None = None
+    worst_performer: PerformerInfo | None = None
+    upcoming_earnings_count: int = 0
+    upcoming_earnings_tickers: list[str] = []

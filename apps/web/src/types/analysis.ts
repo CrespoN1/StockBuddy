@@ -31,9 +31,22 @@ export interface JobStatus {
   id: string;
   job_type: string;
   status: string;
+  input_data: Record<string, unknown> | null;
   result: Record<string, unknown> | null;
   error: string | null;
   created_at: string;
   started_at: string | null;
   completed_at: string | null;
+}
+
+export interface PerformerInfo {
+  ticker: string;
+  daily_change_pct: number;
+}
+
+export interface DashboardSummary {
+  best_performer: PerformerInfo | null;
+  worst_performer: PerformerInfo | null;
+  upcoming_earnings_count: number;
+  upcoming_earnings_tickers: string[];
 }

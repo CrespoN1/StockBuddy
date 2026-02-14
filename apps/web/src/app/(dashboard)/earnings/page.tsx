@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { AnalyzeEarningsForm } from "@/components/earnings/analyze-earnings-form";
 import { EarningsCard } from "@/components/earnings/earnings-card";
 import { useEarnings } from "@/hooks/use-earnings";
+import { EarningsCalendar } from "@/components/portfolio/earnings-calendar";
 
 export default function EarningsPage() {
   const [selectedTicker, setSelectedTicker] = useState("");
@@ -19,6 +20,10 @@ export default function EarningsPage() {
         Analyze earnings call transcripts with AI to extract sentiment, key
         metrics, and growth insights.
       </p>
+
+      <div className="mt-6">
+        <EarningsCalendar />
+      </div>
 
       <div className="mt-6">
         <AnalyzeEarningsForm onTickerSelect={setSelectedTicker} />

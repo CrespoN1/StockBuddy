@@ -9,9 +9,11 @@ import {
   Eye,
   BarChart3,
   GitCompareArrows,
+  Bell,
   CreditCard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAlertsSummary } from "@/hooks/use-alerts";
 
 export const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -20,6 +22,7 @@ export const navItems = [
   { href: "/watchlist", label: "Watchlist", icon: Eye },
   { href: "/earnings", label: "Earnings", icon: BarChart3 },
   { href: "/compare", label: "Compare", icon: GitCompareArrows },
+  { href: "/alerts", label: "Alerts", icon: Bell },
   { href: "/billing", label: "Billing", icon: CreditCard },
 ];
 
@@ -29,6 +32,7 @@ interface SidebarNavProps {
 
 export function SidebarNav({ onNavigate }: SidebarNavProps) {
   const pathname = usePathname();
+  const { data: alertsSummary } = useAlertsSummary();
 
   return (
     <nav className="space-y-1 p-3">
@@ -37,6 +41,10 @@ export function SidebarNav({ onNavigate }: SidebarNavProps) {
           item.href === "/dashboard"
             ? pathname === "/dashboard"
             : pathname === item.href || pathname.startsWith(item.href + "/");
+        const showBadge =
+          item.href === "/alerts" &&
+          alertsSummary &&
+          alertsSummary.triggered_count > 0;
         return (
           <Link
             key={item.href}
@@ -51,6 +59,11 @@ export function SidebarNav({ onNavigate }: SidebarNavProps) {
           >
             <item.icon className="h-4 w-4" />
             {item.label}
+            {showBadge && (
+              <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                {alertsSummary.triggered_count}
+              </span>
+            )}
           </Link>
         );
       })}

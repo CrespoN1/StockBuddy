@@ -12,6 +12,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { HoldingsTable } from "@/components/portfolio/holdings-table";
 import { AddHoldingForm } from "@/components/portfolio/add-holding-form";
 import { SectorChart } from "@/components/portfolio/sector-chart";
+import { PortfolioHistoryChart } from "@/components/portfolio/portfolio-history-chart";
 import { PortfolioAnalysisPanel } from "@/components/portfolio/portfolio-analysis-panel";
 import { PortfolioNewsPanel } from "@/components/portfolio/portfolio-news-panel";
 import { usePortfolio, usePortfolioSnapshot, usePortfolioEarningsInsights } from "@/hooks/use-portfolios";
@@ -138,6 +139,8 @@ export default function PortfolioDetailPage() {
               </Card>
             </div>
           )}
+
+          <PortfolioHistoryChart portfolioId={portfolioId} />
 
           <Card>
             <CardHeader>

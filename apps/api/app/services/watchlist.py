@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import WatchlistItem
-from app.services import market_data
+from app.services import market_data, price_alerts
 
 logger = structlog.stdlib.get_logger(__name__)
 
@@ -108,6 +108,7 @@ async def refresh_prices(
             quote = await market_data.get_quote(item.ticker)
             if quote["price"] is not None:
                 item.last_price = quote["price"]
+                await price_alerts.check_alerts_for_ticker(db, item.ticker, quote["price"])
             if quote["previous_close"] is not None:
                 item.previous_close = quote["previous_close"]
             db.add(item)

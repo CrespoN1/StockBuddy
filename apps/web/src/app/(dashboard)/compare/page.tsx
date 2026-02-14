@@ -11,6 +11,7 @@ import { useCompare } from "@/hooks/use-analysis";
 import { useJobPolling } from "@/hooks/use-job-polling";
 import { useUsage } from "@/hooks/use-subscription";
 import { UpgradePrompt } from "@/components/ui/upgrade-prompt";
+import { PastComparisons } from "@/components/compare/past-comparisons";
 
 export default function ComparePage() {
   const { job, isPolling, startPolling } = useJobPolling();
@@ -90,6 +91,10 @@ export default function ComparePage() {
             description="Select at least 2 stocks above and click Compare to see an AI-powered comparison of their earnings data."
           />
         )}
+      </div>
+
+      <div className="mt-8">
+        <PastComparisons />
       </div>
     </div>
   );
