@@ -15,6 +15,8 @@ export type {
 export type { EarningsCallRead } from "./earnings";
 export type {
   PortfolioSnapshotRead,
+  BenchmarkPoint,
+  PortfolioHistoryWithBenchmark,
   SectorAllocation,
   EarningsInsights,
   JobStatus,

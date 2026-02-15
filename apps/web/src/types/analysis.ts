@@ -13,6 +13,16 @@ export interface PortfolioSnapshotRead {
   daily_change_pct: number | null;
 }
 
+export interface BenchmarkPoint {
+  date: string;
+  portfolio_pct: number;
+  sp500_pct: number;
+}
+
+export interface PortfolioHistoryWithBenchmark {
+  data: BenchmarkPoint[];
+}
+
 export interface SectorAllocation {
   sector: string;
   weight: number;

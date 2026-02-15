@@ -119,3 +119,24 @@ async def get_stock_info(ticker: str) -> StockInfo | None:
 async def get_stock_history(ticker: str, period: str = "1y") -> list[OHLCVBar]:
     bars = await asyncio.to_thread(_fetch_history_sync, ticker, period)
     return [OHLCVBar(**b) for b in bars]
+
+
+def _fetch_benchmark_sync(start_date: str, end_date: str) -> list[dict]:
+    """Fetch SPY daily close prices for the given date range."""
+    try:
+        spy = yf.Ticker("SPY")
+        df: pd.DataFrame = spy.history(start=start_date, end=end_date)
+        if df is None or df.empty:
+            return []
+        return [
+            {"date": ts.strftime("%Y-%m-%d"), "close": round(row["Close"], 4)}
+            for ts, row in df.iterrows()
+        ]
+    except Exception as exc:
+        logger.error("yfinance SPY benchmark error: %s", exc)
+        return []
+
+
+async def get_benchmark_history(start_date: str, end_date: str) -> list[dict]:
+    """Return SPY daily closes between start_date and end_date (YYYY-MM-DD)."""
+    return await asyncio.to_thread(_fetch_benchmark_sync, start_date, end_date)

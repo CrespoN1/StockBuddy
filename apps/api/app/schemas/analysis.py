@@ -20,6 +20,16 @@ class PortfolioSnapshotRead(BaseModel):
     daily_change_pct: float | None = None
 
 
+class BenchmarkPoint(BaseModel):
+    date: str
+    portfolio_pct: float
+    sp500_pct: float
+
+
+class PortfolioHistoryWithBenchmark(BaseModel):
+    data: list[BenchmarkPoint]
+
+
 class SectorAllocation(BaseModel):
     sector: str
     weight: float  # 0.0 – 1.0

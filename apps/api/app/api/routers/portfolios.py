@@ -14,12 +14,13 @@ from app.schemas.portfolio import (
 from app.schemas.analysis import (
     DashboardSummary,
     EarningsInsights,
+    PortfolioHistoryWithBenchmark,
     PortfolioSnapshotRead,
     SectorAllocation,
 )
 from app.schemas.holding import HoldingRead
 from app.schemas.stock import NewsArticle, RedditPost
-from app.services import news, reddit, portfolio as portfolio_svc
+from app.services import news, reddit, portfolio as portfolio_svc, stock_data
 from app.services import subscription as sub_svc
 
 router = APIRouter(prefix="/portfolios", tags=["portfolios"])
@@ -110,6 +111,79 @@ async def get_portfolio_history(
     user_id: str = Depends(get_current_user),
 ):
     return await portfolio_svc.get_snapshot_history(db, user_id, portfolio_id, days)
+
+
+@router.get(
+    "/{portfolio_id}/history-with-benchmark",
+    response_model=PortfolioHistoryWithBenchmark,
+)
+async def get_portfolio_history_with_benchmark(
+    portfolio_id: int,
+    days: int = 90,
+    db: AsyncSession = Depends(get_db),
+    user_id: str = Depends(get_current_user),
+):
+    """Return portfolio % change alongside S&P 500 % change."""
+    from datetime import timedelta, timezone, datetime as dt
+    from app.schemas.analysis import BenchmarkPoint
+
+    snapshots = await portfolio_svc.get_snapshot_history(
+        db, user_id, portfolio_id, days
+    )
+    if len(snapshots) < 2:
+        return PortfolioHistoryWithBenchmark(data=[])
+
+    # Date range from snapshots
+    start_dt = snapshots[0].created_at
+    end_dt = snapshots[-1].created_at + timedelta(days=1)
+    start_str = start_dt.strftime("%Y-%m-%d")
+    end_str = end_dt.strftime("%Y-%m-%d")
+
+    # Fetch SPY data for the same range
+    spy_bars = await stock_data.get_benchmark_history(start_str, end_str)
+
+    # Build SPY lookup by date → close price
+    spy_by_date: dict[str, float] = {b["date"]: b["close"] for b in spy_bars}
+
+    # Base values for % change calculation
+    base_portfolio = snapshots[0].total_value or 0
+    spy_dates_sorted = sorted(spy_by_date.keys())
+    base_spy = spy_by_date[spy_dates_sorted[0]] if spy_dates_sorted else 0
+
+    if base_portfolio == 0 or base_spy == 0:
+        return PortfolioHistoryWithBenchmark(data=[])
+
+    data: list[BenchmarkPoint] = []
+    last_spy_close = base_spy
+
+    for snap in snapshots:
+        snap_date = snap.created_at.strftime("%Y-%m-%d")
+        portfolio_val = snap.total_value or 0
+        portfolio_pct = ((portfolio_val - base_portfolio) / base_portfolio) * 100
+
+        # Find closest SPY price on or before snapshot date
+        spy_close = spy_by_date.get(snap_date)
+        if spy_close is None:
+            # Use most recent SPY close before this date
+            for d in reversed(spy_dates_sorted):
+                if d <= snap_date:
+                    spy_close = spy_by_date[d]
+                    break
+        if spy_close is None:
+            spy_close = last_spy_close
+        last_spy_close = spy_close
+
+        sp500_pct = ((spy_close - base_spy) / base_spy) * 100
+
+        data.append(
+            BenchmarkPoint(
+                date=snap.created_at.strftime("%b %d"),
+                portfolio_pct=round(portfolio_pct, 2),
+                sp500_pct=round(sp500_pct, 2),
+            )
+        )
+
+    return PortfolioHistoryWithBenchmark(data=data)
 
 
 @router.get("/{portfolio_id}/snapshot", response_model=PortfolioSnapshotRead)

@@ -7,6 +7,7 @@ import type {
   PortfolioRead,
   PortfolioDetail,
   PortfolioSnapshotRead,
+  PortfolioHistoryWithBenchmark,
   SectorAllocation,
   EarningsInsights,
   NewsArticle,
@@ -46,6 +47,19 @@ export function usePortfolioHistory(id: number, days = 90) {
         `/api/v1/portfolios/${id}/history?days=${days}`
       ),
     enabled: id > 0,
+  });
+}
+
+export function usePortfolioHistoryWithBenchmark(id: number, days = 90) {
+  const fetchApi = useApiFetch();
+  return useQuery({
+    queryKey: ["portfolios", id, "history-with-benchmark", days],
+    queryFn: () =>
+      fetchApi<PortfolioHistoryWithBenchmark>(
+        `/api/v1/portfolios/${id}/history-with-benchmark?days=${days}`
+      ),
+    enabled: id > 0,
+    staleTime: 5 * 60 * 1000,
   });
 }
 
