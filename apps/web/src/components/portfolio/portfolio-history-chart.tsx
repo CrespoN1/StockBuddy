@@ -23,7 +23,20 @@ export function PortfolioHistoryChart({ portfolioId }: Props) {
     usePortfolioHistoryWithBenchmark(portfolioId);
 
   if (isPending) return <Skeleton className="h-[300px] w-full" />;
-  if (!response || response.data.length < 2) return null;
+  if (!response || response.data.length < 2) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Portfolio vs S&amp;P 500</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            Run &quot;Analyze Portfolio&quot; at least twice to see your performance compared to the S&amp;P 500.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
