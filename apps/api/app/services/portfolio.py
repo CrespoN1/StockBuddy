@@ -217,10 +217,8 @@ async def update_holding(
     if holding is None:
         return None
     holding.shares = shares
-    if purchased_at is not None:
-        holding.purchased_at = purchased_at
-    if cost_basis is not None:
-        holding.cost_basis = cost_basis
+    holding.purchased_at = purchased_at
+    holding.cost_basis = cost_basis
     holding.updated_at = datetime.now(timezone.utc)
     db.add(holding)
     await db.flush()

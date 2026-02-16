@@ -26,7 +26,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { useUpdateHolding, useDeleteHolding, useRefreshHoldings } from "@/hooks/use-holdings";
-import { formatCurrency, formatNumber } from "@/lib/format";
+import { formatCurrency } from "@/lib/format";
 import { exportHoldingsCSV } from "@/lib/csv-export";
 import type { HoldingRead } from "@/types";
 import { holdingValue, holdingGainLoss, holdingGainLossPct } from "@/types";
