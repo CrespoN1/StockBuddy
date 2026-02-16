@@ -78,19 +78,19 @@ export function PortfolioHistoryChart({ portfolioId }: Props) {
             <Line
               type="monotone"
               dataKey="portfolio_pct"
-              stroke="hsl(var(--primary))"
-              strokeWidth={2}
+              stroke="#2563eb"
+              strokeWidth={3}
               dot={false}
-              activeDot={{ r: 4 }}
+              activeDot={{ r: 5, strokeWidth: 2 }}
             />
             <Line
               type="monotone"
               dataKey="sp500_pct"
-              stroke="hsl(var(--muted-foreground))"
-              strokeWidth={2}
-              strokeDasharray="5 5"
+              stroke="#f97316"
+              strokeWidth={3}
+              strokeDasharray="6 3"
               dot={false}
-              activeDot={{ r: 4 }}
+              activeDot={{ r: 5, strokeWidth: 2 }}
             />
           </LineChart>
         </ResponsiveContainer>
