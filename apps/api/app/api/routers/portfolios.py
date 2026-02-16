@@ -144,16 +144,21 @@ async def get_portfolio_history_with_benchmark(
         spy_by_date: dict[str, float] = {b["date"]: b["close"] for b in spy_bars}
         spy_dates_sorted = sorted(spy_by_date.keys())
 
-        base_portfolio = reconstructed[0]["value"]
         base_spy = spy_by_date.get(spy_dates_sorted[0], 0) if spy_dates_sorted else 0
+        first_cost = reconstructed[0].get("cost", 0)
 
-        if base_portfolio > 0 and base_spy > 0:
+        if first_cost > 0 and base_spy > 0:
             data: list[BenchmarkPoint] = []
             last_spy_close = base_spy
 
             for point in reconstructed:
                 d = point["date"]
-                portfolio_pct = ((point["value"] - base_portfolio) / base_portfolio) * 100
+                cost = point.get("cost", 0)
+                # Gain on invested capital — immune to new-holding additions
+                if cost > 0:
+                    portfolio_pct = ((point["value"] - cost) / cost) * 100
+                else:
+                    portfolio_pct = 0.0
 
                 spy_close = spy_by_date.get(d)
                 if spy_close is None:

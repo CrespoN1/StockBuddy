@@ -533,8 +533,13 @@ async def reconstruct_portfolio_history(
 ) -> list[dict] | None:
     """Reconstruct daily portfolio value from purchase dates using yfinance.
 
-    Returns list of {"date": "YYYY-MM-DD", "value": float} or None if no
-    holdings have purchased_at set.
+    Returns list of {"date": "YYYY-MM-DD", "value": float, "cost": float}
+    or None if no holdings have purchased_at set.
+
+    `cost` tracks the total invested capital on each date so the benchmark
+    endpoint can compute gain-on-cost (value - cost) / cost rather than
+    raw % change from the first data point, which spikes when new holdings
+    enter the timeline.
     """
     from app.services import stock_data
 
@@ -577,14 +582,35 @@ async def reconstruct_portfolio_history(
         ticker_points = history.get(ticker, [])
         price_lookup[ticker] = {p["date"]: p["close"] for p in ticker_points}
 
-    # For each date, sum (close * shares) for holdings purchased on or before that day.
-    # Forward-fill missing prices (weekends/holidays already excluded by yfinance,
-    # but gaps can still occur for individual tickers).
+    # Determine effective cost per share for each holding.
+    # Use user-provided cost_basis if available; otherwise fall back to
+    # the closing price on (or nearest after) the purchase date.
+    effective_cost: dict[int, float] = {}
+    for h in dated_holdings:
+        if h.cost_basis is not None:
+            effective_cost[h.id] = h.cost_basis
+        else:
+            purchase_str = h.purchased_at.strftime("%Y-%m-%d")
+            ticker_prices = price_lookup.get(h.ticker, {})
+            cost = ticker_prices.get(purchase_str)
+            if cost is None:
+                # Find the nearest trading day on or after purchase
+                for d in sorted_dates:
+                    if d >= purchase_str and h.ticker in price_lookup and d in price_lookup[h.ticker]:
+                        cost = price_lookup[h.ticker][d]
+                        break
+            effective_cost[h.id] = cost or 0.0
+
+    # For each date, sum (close * shares) for holdings purchased on or before
+    # that day.  Also track total invested cost.
+    # Forward-fill missing prices (weekends/holidays already excluded by
+    # yfinance, but gaps can still occur for individual tickers).
     last_known_price: dict[str, float] = {}
     portfolio_series: list[dict] = []
 
     for d in sorted_dates:
         daily_value = 0.0
+        daily_cost = 0.0
         has_any_holding = False
 
         for h in dated_holdings:
@@ -595,8 +621,13 @@ async def reconstruct_portfolio_history(
                     last_known_price[h.ticker] = close
                 price = last_known_price.get(h.ticker, 0.0)
                 daily_value += price * h.shares
+                daily_cost += effective_cost.get(h.id, 0.0) * h.shares
 
         if has_any_holding and daily_value > 0:
-            portfolio_series.append({"date": d, "value": round(daily_value, 2)})
+            portfolio_series.append({
+                "date": d,
+                "value": round(daily_value, 2),
+                "cost": round(daily_cost, 2),
+            })
 
     return portfolio_series if len(portfolio_series) >= 2 else None
