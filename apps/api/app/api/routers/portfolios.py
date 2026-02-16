@@ -145,20 +145,43 @@ async def get_portfolio_history_with_benchmark(
         spy_dates_sorted = sorted(spy_by_date.keys())
 
         base_spy = spy_by_date.get(spy_dates_sorted[0], 0) if spy_dates_sorted else 0
-        first_cost = reconstructed[0].get("cost", 0)
 
-        if first_cost > 0 and base_spy > 0:
+        if reconstructed[0]["value"] > 0 and base_spy > 0:
             data: list[BenchmarkPoint] = []
             last_spy_close = base_spy
 
-            for point in reconstructed:
+            # Time-Weighted Return (TWR): chain daily returns so that
+            # adding new holdings doesn't create a fake spike.
+            # When cost changes (new holding enters), we rebase:
+            # the return for that day uses the NEW cost as denominator.
+            cumulative_return = 1.0  # starts at 1.0 = 0% gain
+            prev_value = reconstructed[0]["value"]
+            prev_cost = reconstructed[0].get("cost", prev_value)
+
+            for i, point in enumerate(reconstructed):
                 d = point["date"]
-                cost = point.get("cost", 0)
-                # Gain on invested capital — immune to new-holding additions
-                if cost > 0:
-                    portfolio_pct = ((point["value"] - cost) / cost) * 100
-                else:
+                value = point["value"]
+                cost = point.get("cost", value)
+
+                if i == 0:
+                    # Day 1: 0% for both
                     portfolio_pct = 0.0
+                else:
+                    # If cost changed (new holding entered), rebase:
+                    # compute return only on the portion that existed yesterday.
+                    if cost != prev_cost and prev_cost > 0:
+                        # Market movement on existing holdings before new one:
+                        # old_holdings_today = value - (cost - prev_cost)
+                        old_value_today = value - (cost - prev_cost)
+                        daily_return = old_value_today / prev_value if prev_value > 0 else 1.0
+                    else:
+                        daily_return = value / prev_value if prev_value > 0 else 1.0
+
+                    cumulative_return *= daily_return
+                    portfolio_pct = (cumulative_return - 1.0) * 100
+
+                prev_value = value
+                prev_cost = cost
 
                 spy_close = spy_by_date.get(d)
                 if spy_close is None:
