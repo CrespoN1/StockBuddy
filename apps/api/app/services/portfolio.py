@@ -8,7 +8,7 @@ Changes: in-memory state → DB-backed via SQLModel, all queries scoped by user_
 
 import asyncio
 import structlog
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -73,7 +73,13 @@ async def delete_portfolio(db: AsyncSession, user_id: str, portfolio_id: int) ->
 # ─── Holdings ─────────────────────────────────────────────────────────
 
 async def add_holding(
-    db: AsyncSession, user_id: str, portfolio_id: int, ticker: str, shares: float
+    db: AsyncSession,
+    user_id: str,
+    portfolio_id: int,
+    ticker: str,
+    shares: float,
+    purchased_at: date | None = None,
+    cost_basis: float | None = None,
 ) -> Holding | None:
     """Add a holding and populate market data from Alpha Vantage."""
     # Verify portfolio belongs to user
@@ -116,6 +122,8 @@ async def add_holding(
         portfolio_id=portfolio_id,
         ticker=ticker,
         shares=shares,
+        purchased_at=purchased_at,
+        cost_basis=cost_basis,
         last_price=last_price,
         previous_close=previous_close,
         sector=sector,
@@ -190,7 +198,13 @@ async def get_holdings(db: AsyncSession, user_id: str, portfolio_id: int) -> lis
 
 
 async def update_holding(
-    db: AsyncSession, user_id: str, portfolio_id: int, holding_id: int, shares: float
+    db: AsyncSession,
+    user_id: str,
+    portfolio_id: int,
+    holding_id: int,
+    shares: float,
+    purchased_at: date | None = None,
+    cost_basis: float | None = None,
 ) -> Holding | None:
     result = await db.execute(
         select(Holding).where(
@@ -203,6 +217,10 @@ async def update_holding(
     if holding is None:
         return None
     holding.shares = shares
+    if purchased_at is not None:
+        holding.purchased_at = purchased_at
+    if cost_basis is not None:
+        holding.cost_basis = cost_basis
     holding.updated_at = datetime.now(timezone.utc)
     db.add(holding)
     await db.flush()
@@ -506,3 +524,81 @@ async def get_dashboard_summary(db: AsyncSession, user_id: str) -> DashboardSumm
         upcoming_earnings_count=len(upcoming_tickers),
         upcoming_earnings_tickers=upcoming_tickers,
     )
+
+
+# ─── Historical Reconstruction ───────────────────────────────────────
+
+async def reconstruct_portfolio_history(
+    db: AsyncSession,
+    user_id: str,
+    portfolio_id: int,
+) -> list[dict] | None:
+    """Reconstruct daily portfolio value from purchase dates using yfinance.
+
+    Returns list of {"date": "YYYY-MM-DD", "value": float} or None if no
+    holdings have purchased_at set.
+    """
+    from app.services import stock_data
+
+    holdings = await get_holdings(db, user_id, portfolio_id)
+    if not holdings:
+        return None
+
+    # Filter to holdings with purchased_at
+    dated_holdings = [h for h in holdings if h.purchased_at is not None]
+    if not dated_holdings:
+        return None  # Fall back to snapshot-based history
+
+    # Find the earliest purchase date
+    earliest = min(h.purchased_at for h in dated_holdings)
+    today = date.today()
+    start_str = earliest.strftime("%Y-%m-%d")
+    end_str = (today + timedelta(days=1)).strftime("%Y-%m-%d")
+
+    # Gather unique tickers
+    tickers = list({h.ticker for h in dated_holdings})
+
+    # Batch fetch all ticker histories
+    history = await stock_data.get_multi_ticker_history(tickers, start_str, end_str)
+    if not history:
+        return None
+
+    # Build a unified date index from all tickers
+    all_dates: set[str] = set()
+    for ticker_data in history.values():
+        for point in ticker_data:
+            all_dates.add(point["date"])
+    sorted_dates = sorted(all_dates)
+
+    if not sorted_dates:
+        return None
+
+    # Build lookup: ticker -> {date: close_price}
+    price_lookup: dict[str, dict[str, float]] = {}
+    for ticker in tickers:
+        ticker_points = history.get(ticker, [])
+        price_lookup[ticker] = {p["date"]: p["close"] for p in ticker_points}
+
+    # For each date, sum (close * shares) for holdings purchased on or before that day.
+    # Forward-fill missing prices (weekends/holidays already excluded by yfinance,
+    # but gaps can still occur for individual tickers).
+    last_known_price: dict[str, float] = {}
+    portfolio_series: list[dict] = []
+
+    for d in sorted_dates:
+        daily_value = 0.0
+        has_any_holding = False
+
+        for h in dated_holdings:
+            if h.purchased_at.strftime("%Y-%m-%d") <= d:
+                has_any_holding = True
+                close = price_lookup.get(h.ticker, {}).get(d)
+                if close is not None:
+                    last_known_price[h.ticker] = close
+                price = last_known_price.get(h.ticker, 0.0)
+                daily_value += price * h.shares
+
+        if has_any_holding and daily_value > 0:
+            portfolio_series.append({"date": d, "value": round(daily_value, 2)})
+
+    return portfolio_series if len(portfolio_series) >= 2 else None

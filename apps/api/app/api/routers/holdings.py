@@ -38,7 +38,9 @@ async def add_holding(
             "Free plan allows 10 holdings per portfolio. Upgrade to Pro for unlimited.",
         )
     holding = await portfolio_svc.add_holding(
-        db, user_id, portfolio_id, body.ticker, body.shares
+        db, user_id, portfolio_id, body.ticker, body.shares,
+        purchased_at=body.purchased_at,
+        cost_basis=body.cost_basis,
     )
     if holding is None:
         raise HTTPException(404, "Portfolio not found")
@@ -54,7 +56,9 @@ async def update_holding(
     user_id: str = Depends(get_current_user),
 ):
     holding = await portfolio_svc.update_holding(
-        db, user_id, portfolio_id, holding_id, body.shares
+        db, user_id, portfolio_id, holding_id, body.shares,
+        purchased_at=body.purchased_at,
+        cost_basis=body.cost_basis,
     )
     if holding is None:
         raise HTTPException(404, "Holding not found")

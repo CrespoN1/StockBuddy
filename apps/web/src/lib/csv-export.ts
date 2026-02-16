@@ -1,5 +1,5 @@
 import type { HoldingRead } from "@/types";
-import { holdingValue } from "@/types";
+import { holdingValue, holdingGainLoss, holdingGainLossPct } from "@/types";
 
 function escapeCSV(value: string | number | null | undefined): string {
   if (value == null) return "";
@@ -29,16 +29,28 @@ function downloadCSV(csv: string, filename: string): void {
 }
 
 export function exportHoldingsCSV(holdings: HoldingRead[], portfolioName: string): void {
-  const headers = ["Ticker", "Shares", "Price", "Value", "Sector", "Beta", "Dividend Yield"];
-  const rows = holdings.map((h) => [
-    h.ticker,
-    h.shares,
-    h.last_price,
-    holdingValue(h),
-    h.sector,
-    h.beta,
-    h.dividend_yield,
-  ]);
+  const headers = [
+    "Ticker", "Shares", "Price", "Cost Basis", "Value",
+    "Gain/Loss", "Gain/Loss %", "Purchase Date",
+    "Sector", "Beta", "Dividend Yield",
+  ];
+  const rows = holdings.map((h) => {
+    const gl = holdingGainLoss(h);
+    const glPct = holdingGainLossPct(h);
+    return [
+      h.ticker,
+      h.shares,
+      h.last_price,
+      h.cost_basis,
+      holdingValue(h),
+      gl != null ? gl.toFixed(2) : null,
+      glPct != null ? `${glPct.toFixed(1)}%` : null,
+      h.purchased_at,
+      h.sector,
+      h.beta,
+      h.dividend_yield,
+    ];
+  });
   const date = new Date().toISOString().slice(0, 10);
   const safeName = portfolioName.replace(/[^a-zA-Z0-9-_]/g, "_");
   downloadCSV(generateCSV(headers, rows), `${safeName}-holdings-${date}.csv`);

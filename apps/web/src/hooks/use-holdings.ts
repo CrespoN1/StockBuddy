@@ -24,7 +24,12 @@ export function useAddHolding(portfolioId: number) {
   const fetchApi = useApiFetch();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: { ticker: string; shares: number }) =>
+    mutationFn: (data: {
+      ticker: string;
+      shares: number;
+      purchased_at?: string | null;
+      cost_basis?: number | null;
+    }) =>
       fetchApi<HoldingRead>(`/api/v1/portfolios/${portfolioId}/holdings`, {
         method: "POST",
         body: data,
@@ -32,6 +37,7 @@ export function useAddHolding(portfolioId: number) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["portfolios", portfolioId, "holdings"] });
       queryClient.invalidateQueries({ queryKey: ["portfolios", portfolioId] });
+      queryClient.invalidateQueries({ queryKey: ["portfolios", portfolioId, "history-with-benchmark"] });
     },
   });
 }
@@ -40,7 +46,14 @@ export function useUpdateHolding(portfolioId: number) {
   const fetchApi = useApiFetch();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ holdingId, data }: { holdingId: number; data: { shares: number } }) =>
+    mutationFn: ({ holdingId, data }: {
+      holdingId: number;
+      data: {
+        shares: number;
+        purchased_at?: string | null;
+        cost_basis?: number | null;
+      };
+    }) =>
       fetchApi<HoldingRead>(
         `/api/v1/portfolios/${portfolioId}/holdings/${holdingId}`,
         { method: "PUT", body: data }
@@ -48,6 +61,7 @@ export function useUpdateHolding(portfolioId: number) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["portfolios", portfolioId, "holdings"] });
       queryClient.invalidateQueries({ queryKey: ["portfolios", portfolioId] });
+      queryClient.invalidateQueries({ queryKey: ["portfolios", portfolioId, "history-with-benchmark"] });
     },
   });
 }
@@ -80,6 +94,7 @@ export function useDeleteHolding(portfolioId: number) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["portfolios", portfolioId, "holdings"] });
       queryClient.invalidateQueries({ queryKey: ["portfolios", portfolioId] });
+      queryClient.invalidateQueries({ queryKey: ["portfolios", portfolioId, "history-with-benchmark"] });
     },
   });
 }

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -6,10 +6,14 @@ from pydantic import BaseModel, ConfigDict, Field
 class HoldingCreate(BaseModel):
     ticker: str = Field(..., min_length=1, max_length=10, pattern=r"^[A-Za-z.]+$")
     shares: float = Field(..., gt=0)
+    purchased_at: date | None = None
+    cost_basis: float | None = Field(None, ge=0)
 
 
 class HoldingUpdate(BaseModel):
     shares: float = Field(..., gt=0)
+    purchased_at: date | None = None
+    cost_basis: float | None = Field(None, ge=0)
 
 
 class HoldingRead(BaseModel):
@@ -19,6 +23,8 @@ class HoldingRead(BaseModel):
     portfolio_id: int
     ticker: str
     shares: float
+    purchased_at: date | None = None
+    cost_basis: float | None = None
     last_price: float | None = None
     previous_close: float | None = None
     sector: str | None = None

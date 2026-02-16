@@ -31,7 +31,7 @@ export function PortfolioHistoryChart({ portfolioId }: Props) {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            Run &quot;Analyze Portfolio&quot; at least twice to see your performance compared to the S&amp;P 500.
+            Add purchase dates to your holdings to see historical performance vs the S&amp;P 500.
           </p>
         </CardContent>
       </Card>

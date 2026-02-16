@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import TYPE_CHECKING
 
 import sqlalchemy as sa
@@ -17,6 +17,10 @@ class Holding(SQLModel, table=True):
     portfolio_id: int = Field(foreign_key="portfolio.id", index=True)
     ticker: str = Field(index=True)
     shares: float = 0.0
+
+    # Purchase info (user-provided)
+    purchased_at: date | None = None
+    cost_basis: float | None = None  # price per share at purchase
 
     # Market data
     last_price: float | None = None

@@ -140,3 +140,55 @@ def _fetch_benchmark_sync(start_date: str, end_date: str) -> list[dict]:
 async def get_benchmark_history(start_date: str, end_date: str) -> list[dict]:
     """Return SPY daily closes between start_date and end_date (YYYY-MM-DD)."""
     return await asyncio.to_thread(_fetch_benchmark_sync, start_date, end_date)
+
+
+def _fetch_multi_ticker_history_sync(
+    tickers: list[str],
+    start_date: str,
+    end_date: str,
+) -> dict[str, list[dict]]:
+    """Fetch daily close prices for multiple tickers in a single batch call.
+
+    Returns {ticker: [{date: "YYYY-MM-DD", close: float}, ...]}.
+    """
+    try:
+        df = yf.download(
+            tickers=tickers,
+            start=start_date,
+            end=end_date,
+            auto_adjust=True,
+            threads=True,
+        )
+        if df is None or df.empty:
+            return {}
+
+        result: dict[str, list[dict]] = {}
+        for ticker in tickers:
+            try:
+                if len(tickers) == 1:
+                    closes = df["Close"]
+                else:
+                    closes = df[("Close", ticker)]
+                closes = closes.dropna()
+                result[ticker] = [
+                    {"date": ts.strftime("%Y-%m-%d"), "close": round(float(val), 4)}
+                    for ts, val in closes.items()
+                ]
+            except (KeyError, TypeError):
+                logger.warning("No history data for %s", ticker)
+                result[ticker] = []
+        return result
+    except Exception as exc:
+        logger.error("yfinance multi-ticker history error: %s", exc)
+        return {}
+
+
+async def get_multi_ticker_history(
+    tickers: list[str],
+    start_date: str,
+    end_date: str,
+) -> dict[str, list[dict]]:
+    """Async wrapper for batch historical close fetch."""
+    return await asyncio.to_thread(
+        _fetch_multi_ticker_history_sync, tickers, start_date, end_date
+    )

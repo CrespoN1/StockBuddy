@@ -1,6 +1,6 @@
 export type { PortfolioRead, PortfolioDetail, PortfolioCreate, PortfolioUpdate } from "./portfolio";
 export type { HoldingRead, HoldingCreate, HoldingUpdate } from "./holding";
-export { holdingValue } from "./holding";
+export { holdingValue, holdingGainLoss, holdingGainLossPct } from "./holding";
 export type {
   StockSearchResult,
   StockQuote,
